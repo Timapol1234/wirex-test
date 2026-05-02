@@ -1,41 +1,2021 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html class="dark" lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WIREX — Тест соединения</title>
-    <style>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>WIREX — Encrypted access</title>
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="/static/logo-16.svg?v=5">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="/static/logo-32.svg?v=5">
+<link rel="icon" type="image/svg+xml" sizes="any" href="/static/logo-64.svg?v=5">
+<link rel="apple-touch-icon" sizes="64x64" href="/static/logo-64.svg?v=5">
+<link rel="stylesheet" href="/static/tw.css?v=1">
+<link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|inter:400,500,600,700|jetbrains-mono:400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.bunny.net/css?family=material-symbols-outlined&amp;display=swap" rel="stylesheet">
+<style>
+        :root {
+            --wx-bg: #000000;
+            --wx-surface: #0A0A0A;
+            --wx-surface-2: #111111;
+            --wx-border: #2A2A2A;
+            --wx-border-soft: #1A1A1A;
+            --wx-text: #F0F0F0;
+            --wx-text-2: #8A8A8A;
+            /* Accent: monochrome off-white. Variable name kept as --wx-cyan
+               for historical compatibility, but the value is now white. */
+            --wx-cyan: #F5F5F5;
+            --wx-cyan-dim: #CCCCCC;
+            --wx-cyan-glow: rgba(245,245,245,.20);
+            --wx-cyan-wash: rgba(245,245,245,.06);
+        }
         body {
-            background: #000;
-            color: #F0F0F0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--wx-bg);
+            color: var(--wx-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-image:
+                linear-gradient(rgba(245,245,245,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245,245,245,.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            background-position: center top;
+            background-attachment: fixed;
+            position: relative;
         }
-        .card {
-            background: #0A0A0A;
-            border: 1px solid #2A2A2A;
-            border-radius: 12px;
-            padding: 32px;
+        /* Чёрные волны — горизонтальные синусоиды с очень слабой светлой обводкой,
+           создают глубину поверх grid-фона. Под виньеткой, чтобы виньетка
+           ослабляла их по краям. */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 240' preserveAspectRatio='none'><path d='M0,60 Q150,20 300,60 T600,60' stroke='rgba(245,245,245,0.045)' stroke-width='1.2' fill='none'/><path d='M0,110 Q150,70 300,110 T600,110' stroke='rgba(245,245,245,0.035)' stroke-width='1' fill='none'/><path d='M0,160 Q150,120 300,160 T600,160' stroke='rgba(245,245,245,0.028)' stroke-width='1' fill='none'/><path d='M0,210 Q150,170 300,210 T600,210' stroke='rgba(245,245,245,0.022)' stroke-width='1' fill='none'/></svg>");
+            background-repeat: repeat;
+            background-size: 600px 240px;
+        }
+        /* Тёмная виньетка-оверлей: верх/низ затемняются для глубины,
+           центр остаётся чистым. pointer-events:none — клики проходят насквозь.
+           Идёт ПОСЛЕ ::after в render order, поэтому виньетка поверх волн. */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background:
+                radial-gradient(ellipse 120% 60% at 50% 0%,   rgba(0,0,0,0.55) 0%, transparent 55%),
+                radial-gradient(ellipse 120% 60% at 50% 100%, rgba(0,0,0,0.65) 0%, transparent 55%),
+                radial-gradient(ellipse 70%  100% at 0%   50%, rgba(0,0,0,0.35) 0%, transparent 60%),
+                radial-gradient(ellipse 70%  100% at 100% 50%, rgba(0,0,0,0.35) 0%, transparent 60%);
+        }
+        /* Контент рендерим над оверлеями — modal/fixed-блоки с собственным z-index
+           (z-50 у Tailwind) их специфичность выше, останутся как были. */
+        body > main, body > header, body > footer, body > section, body > nav {
+            position: relative;
+            z-index: 2;
+        }
+        .font-headline { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+        .font-mono     { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        .primary-gradient {
+            background: var(--wx-cyan);
+            color: #000;
+        }
+        .primary-gradient:hover {
+            background: var(--wx-cyan-dim);
+            box-shadow: 0 0 24px var(--wx-cyan-glow);
+        }
+        .wx-glow         { box-shadow: 0 0 32px var(--wx-cyan-glow); }
+        .wx-glow-sm      { box-shadow: 0 0 16px rgba(245,245,245,.10); }
+        .wx-card {
+            background: var(--wx-surface);
+            border: 1px solid var(--wx-border-soft);
+        }
+        .wx-card-elevated {
+            background: var(--wx-surface-2);
+            border: 1px solid var(--wx-border);
+        }
+        .wx-input,
+        input.wx-input,
+        textarea.wx-input {
+            background: var(--wx-surface) !important;
+            border: 1px solid var(--wx-border);
+            color: var(--wx-text) !important;
+            -webkit-text-fill-color: var(--wx-text) !important;
+            caret-color: var(--wx-cyan);
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .wx-input:focus {
+            outline: none;
+            border-color: var(--wx-cyan);
+            box-shadow: 0 0 0 3px rgba(245,245,245,.10);
+        }
+        .wx-input::placeholder { color: #4A4A4A !important; opacity: 1; }
+        .wx-input:-webkit-autofill,
+        .wx-input:-webkit-autofill:hover,
+        .wx-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--wx-text) !important;
+            -webkit-box-shadow: 0 0 0 1000px var(--wx-surface) inset !important;
+            transition: background-color 9999s ease-in-out 0s;
+        }
+
+        /* Custom checkbox — visible & on-brand */
+        .wx-check {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            border: 1.5px solid var(--wx-border);
+            border-radius: 4px;
+            background: var(--wx-surface);
+            cursor: pointer;
+            position: relative;
+            transition: border-color .15s, background .15s, box-shadow .15s;
+            flex-shrink: 0;
+        }
+        .wx-check:hover { border-color: #4A4A4A; }
+        .wx-check:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(245,245,245,.15);
+        }
+        .wx-check:checked {
+            background: var(--wx-cyan);
+            border-color: var(--wx-cyan);
+        }
+        .wx-check:checked::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><path d='M3.5 8.5l3 3 6-6.5' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 14px 14px;
+        }
+        .wx-divider { height: 1px; background: var(--wx-border-soft); }
+        .wx-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+        .wx-chip-cyan    { background: var(--wx-cyan-wash); color: var(--wx-cyan); border: 1px solid rgba(245,245,245,.3); }
+        .wx-chip-success { background: rgba(0,231,139,.08); color: #00E78B; border: 1px solid rgba(0,231,139,.3); }
+        .wx-chip-muted   { background: transparent; color: var(--wx-text-2); border: 1px solid var(--wx-border); }
+        .hidden { display: none; }
+        .server-btn.selected {
+            border-color: var(--wx-cyan);
+            background: var(--wx-cyan-wash);
+            box-shadow: 0 0 16px rgba(0,238,252,.12);
+        }
+        .result { animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .copy-btn.copied { background: var(--wx-cyan); color: #000; box-shadow: 0 0 16px var(--wx-cyan-glow); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary .chevron { transition: transform 0.2s ease; }
+        details[open] > summary .chevron { transform: rotate(180deg); }
+        .otp-input {
+            width: 44px; height: 56px;
+            background: var(--wx-surface) !important;
+            border: 1px solid var(--wx-border);
+            border-radius: 8px;
+            color: var(--wx-text) !important;
+            -webkit-text-fill-color: var(--wx-text) !important;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px; font-weight: 600;
             text-align: center;
-            max-width: 400px;
+            transition: border-color .15s, box-shadow .15s;
         }
-        h1 { font-size: 24px; margin: 0 0 8px 0; }
-        p  { color: #8A8A8A; font-size: 14px; margin: 0; }
-        .status { color: #00E78B; font-weight: bold; }
+        /* Перебиваем дефолтный серый Tailwind forms plugin'а на всех нативных полях */
+        input, textarea, select {
+            color: var(--wx-text) !important;
+            -webkit-text-fill-color: var(--wx-text) !important;
+        }
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--wx-cyan);
+            box-shadow: 0 0 0 3px rgba(245,245,245,.10);
+        }
+        .digit-input {} /* legacy hook kept for JS selectors */
+        .wx-bottom-fade { background: linear-gradient(180deg, transparent, #000 60%); }
+        ::selection { background: var(--wx-cyan); color: #000; }
+
+        /* Shimmer skeleton */
+        @keyframes wxShimmer {
+            0%   { background-position: -150% 0; }
+            100% { background-position: 150% 0; }
+        }
+        .wx-skel {
+            background: linear-gradient(90deg, #0A0A0A 0%, #1F1F1F 50%, #0A0A0A 100%);
+            background-size: 200% 100%;
+            animation: wxShimmer 1.6s linear infinite;
+            border-radius: 6px;
+        }
+        .wx-skel-line { height: 12px; }
+        .wx-skel-card {
+            height: 132px;
+            border-radius: 12px;
+            border: 1px solid var(--wx-border-soft);
+        }
+        .wx-skel-tile { height: 92px; border-radius: 8px; }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h1>WIREX</h1>
-        <p>Тестовая страница загружена <span class="status">успешно</span></p>
-        <p id="time" style="margin-top:16px; font-family:monospace; font-size:12px;"></p>
-    </div>
-    <script>
-        document.getElementById('time').textContent = new Date().toLocaleString('ru-RU');
-    </script>
+<body class="bg-background text-on-surface">
+
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-outline-variant">
+<div class="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 max-w-7xl mx-auto">
+<div class="flex items-center gap-2 flex-shrink-0">
+<img src="/static/logo.svg" alt="WIREX" class="h-7 w-7 rounded">
+<span class="font-headline text-[18px] leading-none font-bold tracking-wide text-on-surface">WIR<span class="text-primary">Σ</span>X</span>
+</div>
+<div class="flex items-center gap-2 min-w-0">
+<div id="sub-status-chip" class="hidden wx-chip flex-shrink-0"></div>
+<div id="user-email-display" class="text-on-surface-variant text-xs font-mono hidden md:block truncate max-w-[120px]"></div>
+<button id="logout-btn" class="border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors hidden uppercase tracking-wider flex-shrink-0">Выйти</button>
+</div>
+</div>
+</nav>
+
+<main class="pt-24 pb-12">
+
+<!-- Step 1: Email Input -->
+<section id="email-section" class="relative px-5 py-10 overflow-hidden">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-[60%] bg-primary/[0.06] rounded-full blur-[120px] pointer-events-none"></div>
+<div class="relative z-10 flex flex-col items-center text-center max-w-[440px] mx-auto">
+<img src="/static/logo.svg" alt="WIREX" class="w-20 h-20 rounded-2xl mb-7 wx-glow-sm">
+<div class="text-[10px] text-on-surface-variant uppercase tracking-[0.2em] mb-3">Encrypted access</div>
+<h1 class="font-headline text-[44px] leading-[1.05] font-bold tracking-tight mb-3">
+Welcome to<br><span>WIR<span class="text-primary">Σ</span>X</span>
+</h1>
+<p class="text-on-surface-variant text-sm mb-8 max-w-[320px] leading-relaxed">Зашифрованный доступ к зарубежным сервисам. Войдите по email — пришлём одноразовый код.</p>
+
+<div class="w-full wx-card rounded-2xl p-6">
+<label class="block text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.12em] mb-2 text-left">Email</label>
+<input type="email" id="login-email" placeholder="example@mail.com" class="wx-input w-full rounded-lg px-4 py-3.5 text-base font-mono mb-4">
+<div id="email-error" class="text-error text-xs mb-3 hidden text-left"></div>
+<div class="space-y-2.5 mb-5 text-left">
+<label class="flex items-start gap-2.5 text-[13px] text-on-surface-variant cursor-pointer leading-snug">
+<input type="checkbox" id="consent-privacy" class="wx-check mt-0.5">
+<span>Я ознакомлен(а) с <a href="#" class="text-primary hover:underline underline-offset-2" data-open-modal="privacy-modal">Политикой конфиденциальности</a></span>
+</label>
+<label class="flex items-start gap-2.5 text-[13px] text-on-surface-variant cursor-pointer leading-snug">
+<input type="checkbox" id="consent-pd" class="wx-check mt-0.5">
+<span>Даю <a href="#" class="text-primary hover:underline underline-offset-2" data-open-modal="consent-modal">согласие на обработку персональных данных</a></span>
+</label>
+</div>
+<button id="send-code-btn" disabled class="primary-gradient py-3.5 rounded-lg font-bold text-base w-full active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:shadow-none uppercase tracking-wider">Отправить код</button>
+</div>
+
+<div class="mt-6 flex items-center gap-2 text-[11px] text-on-surface-variant uppercase tracking-[0.12em]">
+<span class="material-symbols-outlined text-[14px]">lock</span> 152-ФЗ · No logs
+</div>
+</div>
+</section>
+
+<!-- Step 2: OTP Verification -->
+<section id="otp-section" class="relative px-5 py-10 overflow-hidden hidden">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-[60%] bg-primary/[0.06] rounded-full blur-[120px] pointer-events-none"></div>
+<div class="relative z-10 flex flex-col items-center text-center max-w-[440px] mx-auto">
+<img src="/static/logo.svg" alt="WIREX" class="w-14 h-14 rounded-xl mb-5">
+<div class="text-[10px] text-on-surface-variant uppercase tracking-[0.2em] mb-2">Verification</div>
+<h2 class="font-headline text-3xl font-bold mb-2 tracking-tight">Подтверждение</h2>
+<p class="text-on-surface-variant text-sm mb-7">Код отправлен на <span id="otp-email" class="text-primary font-mono"></span></p>
+
+<div class="w-full wx-card rounded-2xl p-6">
+<div class="flex justify-center gap-2 mb-4">
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="0" autofocus>
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="1">
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="2">
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="3">
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="4">
+<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="otp-input digit-input" data-index="5">
+</div>
+<button id="paste-code-btn" type="button" class="text-primary text-xs hover:underline mb-4 inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold">
+<span class="material-symbols-outlined text-[14px]">content_paste</span> Вставить код
+</button>
+<div id="otp-error" class="text-error text-xs mb-3 hidden"></div>
+<button id="verify-code-btn" class="primary-gradient py-3.5 rounded-lg font-bold text-base w-full active:scale-[0.98] transition-all uppercase tracking-wider">Подтвердить</button>
+<div class="flex items-center justify-between mt-4 text-xs">
+<button id="change-email-btn" class="text-on-surface-variant hover:text-primary transition-colors">← Изменить email</button>
+<button id="resend-code-btn" class="text-primary hover:underline">Отправить повторно</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- My Keys -->
+<section id="my-keys-section" class="px-5 py-8 hidden">
+<div class="max-w-3xl mx-auto">
+<div class="flex items-center justify-between mb-6 gap-3">
+<div>
+<div class="text-[11px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">Активные подключения</div>
+<h2 class="font-headline text-2xl font-bold">Мои ключи</h2>
+</div>
+<button id="new-key-btn" class="primary-gradient px-4 py-2.5 rounded-lg font-bold text-xs active:scale-[0.98] transition-all whitespace-nowrap uppercase tracking-wider inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">add</span> Новый ключ
+</button>
+</div>
+
+<div id="sub-banner" class="hidden wx-card rounded-xl p-4 mb-5"></div>
+
+<div id="my-keys-loading" class="space-y-3">
+<div class="wx-skel wx-skel-card"></div>
+<div class="wx-skel wx-skel-card"></div>
+<div class="wx-skel wx-skel-card" style="opacity:.6"></div>
+</div>
+
+<div id="my-keys-empty" class="hidden text-center py-16">
+<div class="inline-block p-5 rounded-2xl wx-card mb-5">
+<span class="material-symbols-outlined text-on-surface-variant text-5xl">key_off</span>
+</div>
+<h3 class="font-headline text-xl font-bold mb-2">Ещё нет ключей</h3>
+<p class="text-on-surface-variant text-sm mb-6">Создайте первый ключ, чтобы подключиться к VPN</p>
+<button id="create-first-btn" class="primary-gradient px-6 py-3 rounded-lg font-bold text-sm active:scale-[0.98] transition-all uppercase tracking-wider">Создать ключ</button>
+</div>
+
+<div id="my-keys-list" class="hidden grid grid-cols-1 gap-3"></div>
+
+<div id="keys-limit-hint" class="hidden mt-4 wx-card rounded-xl p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5">info</span>
+<div class="text-xs text-on-surface-variant leading-relaxed">Достигнут лимит — 2 ключа на аккаунт. Чтобы создать ещё, нужен расширенный тариф (от 899 ₽).</div>
+</div>
+</div>
+</section>
+
+<!-- Step 3: Server Selection -->
+<section id="server-section" class="px-5 py-8 hidden">
+<div class="max-w-md mx-auto">
+<button id="server-back-btn" class="mb-6 border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5 active:scale-[0.98] transition-colors uppercase tracking-wider font-medium">
+<span class="material-symbols-outlined text-[14px]">arrow_back</span> К моим ключам
+</button>
+<div class="text-[11px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">Создание ключа</div>
+<h2 id="server-section-title" class="font-headline text-2xl font-bold mb-3">Готовим ключ</h2>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed">Доступ ко всем серверам сразу — Happ Plus сам выберет самый быстрый. Ничего настраивать не нужно.</p>
+
+<div class="wx-card rounded-2xl p-6">
+<div id="create-error" class="text-error text-xs mb-3 hidden"></div>
+<button id="create-key-btn" class="primary-gradient py-3.5 rounded-lg font-bold text-base w-full active:scale-[0.98] transition-all uppercase tracking-wider">
+Сгенерировать ключ
+</button>
+<input type="hidden" id="username" value="">
+</div>
+</div>
+</section>
+
+<!-- Result Section -->
+<section id="result-section" class="px-5 py-8 hidden">
+<div class="max-w-[440px] mx-auto result">
+<div class="text-center mb-5">
+<div class="inline-flex items-center gap-1.5 wx-chip wx-chip-success mb-3">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Ключ создан
+</div>
+<h2 class="font-headline text-2xl font-bold">Готово</h2>
+<p id="result-info" class="text-on-surface-variant text-sm font-mono mt-1"></p>
+</div>
+
+<div id="proto-tabs" class="flex gap-2 mb-4 justify-center flex-wrap">
+<button data-proto="vless" class="proto-tab primary-gradient px-4 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wider">VLESS</button>
+<button data-proto="hysteria" id="hy2-tab-btn" class="proto-tab border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-4 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wider hidden">Hysteria 2</button>
+</div>
+
+<div id="proto-vless" class="proto-content" data-proto="vless">
+<div class="qr-container text-center mb-3">
+<div class="inline-block p-3 rounded-2xl bg-surface-container border border-primary/40 wx-glow-sm">
+<img id="qr-img" src="" alt="QR Code" class="block bg-white p-2 rounded-lg w-44 h-44">
+</div>
+</div>
+</div>
+
+<div id="proto-hysteria" class="proto-content hidden" data-proto="hysteria">
+<div class="qr-container text-center mb-3">
+<div class="inline-block p-3 rounded-2xl bg-surface-container border border-primary/40 wx-glow-sm">
+<img id="hy2-qr-img" src="" alt="QR Code" class="block bg-white p-2 rounded-lg w-44 h-44">
+</div>
+</div>
+</div>
+
+<button id="auto-import-btn" class="mt-1 mb-5 primary-gradient py-4 rounded-lg font-bold text-base w-full active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase tracking-wider">
+<span class="material-symbols-outlined">rocket_launch</span> Подключиться
+</button>
+
+<div class="proto-content" data-proto="vless">
+<details class="wx-card rounded-xl mb-2.5 overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer select-none">
+<span class="text-primary text-[11px] font-bold uppercase tracking-[0.12em]">VLESS ключ</span>
+<span class="material-symbols-outlined text-on-surface-variant chevron">expand_more</span>
+</summary>
+<div class="px-4 pb-4">
+<div id="vless-url" class="text-sm text-on-surface-variant break-all font-mono"></div>
+<button class="copy-btn mt-3 border border-primary/40 hover:border-primary text-primary px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider w-full transition-colors inline-flex items-center justify-center gap-1.5" onclick="copyText('vless-url', this)">Скопировать</button>
+</div>
+</details>
+</div>
+
+<div class="proto-content hidden" data-proto="hysteria">
+<details class="wx-card rounded-xl mb-2.5 overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer select-none">
+<span class="text-primary text-[11px] font-bold uppercase tracking-[0.12em]">Hysteria 2 ключ</span>
+<span class="material-symbols-outlined text-on-surface-variant chevron">expand_more</span>
+</summary>
+<div class="px-4 pb-4">
+<div id="hy2-url" class="text-sm text-on-surface-variant break-all font-mono"></div>
+<button class="copy-btn mt-3 border border-primary/40 hover:border-primary text-primary px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider w-full transition-colors inline-flex items-center justify-center gap-1.5" onclick="copyText('hy2-url', this)">Скопировать</button>
+<div class="text-xs text-on-surface-variant mt-3">Hysteria 2 — запасной протокол по UDP. Используй, если VLESS не подключается или режет скорость. Клиенты: Hiddify, V2Box (iOS≥1.4), NekoBox, Streisand.</div>
+</div>
+</details>
+</div>
+
+<details class="wx-card rounded-xl mb-2.5 overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer select-none">
+<span class="text-primary text-[11px] font-bold uppercase tracking-[0.12em]">Ссылка подписки</span>
+<span class="material-symbols-outlined text-on-surface-variant chevron">expand_more</span>
+</summary>
+<div class="px-4 pb-4">
+<div id="sub-url" class="text-sm text-on-surface-variant break-all font-mono"></div>
+<button class="copy-btn mt-3 border border-primary/40 hover:border-primary text-primary px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider w-full transition-colors inline-flex items-center justify-center gap-1.5" onclick="copyText('sub-url', this)">Скопировать</button>
+<div class="text-xs text-on-surface-variant mt-2">В подписку зашиты оба протокола — клиент выберет рабочий автоматически.</div>
+</div>
+</details>
+
+<details class="wx-card rounded-xl mb-2.5 overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer select-none">
+<span class="text-primary text-[11px] font-bold uppercase tracking-[0.12em]">Как подключиться</span>
+<span class="material-symbols-outlined text-on-surface-variant chevron">expand_more</span>
+</summary>
+<div class="px-4 pb-4">
+<div class="flex flex-wrap gap-1.5 mb-4" id="platform-tabs">
+<button data-platform="ios" class="platform-tab primary-gradient px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider">iOS</button>
+<button data-platform="android" class="platform-tab border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors">Android</button>
+<button data-platform="windows" class="platform-tab border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors">Windows</button>
+<button data-platform="macos" class="platform-tab border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors">macOS</button>
+</div>
+
+<div id="platform-ios" class="platform-content">
+<ol class="text-on-surface-variant text-sm space-y-2 list-decimal list-inside">
+<li>Нажмите <strong>«Начать использовать»</strong> выше — ключ импортируется в выбранное приложение автоматически</li>
+<li>Если автоматически не вышло: установите <strong>V2Box</strong> или <strong>Happ Plus</strong> из App Store, откройте → <strong>«+»</strong> → <strong>«Импорт из буфера обмена»</strong> (или отсканируйте QR)</li>
+<li>Вставьте <strong>ссылку подписки</strong> или VLESS-ключ из блоков выше</li>
+<li>Нажмите на профиль → <strong>«Подключиться»</strong>. При первом запуске подтвердите добавление VPN-конфигурации в настройках iOS</li>
+</ol>
+</div>
+
+<div id="platform-android" class="platform-content hidden">
+<ol class="text-on-surface-variant text-sm space-y-2 list-decimal list-inside">
+<li>Нажмите <strong>«Начать использовать»</strong> выше — ключ импортируется автоматически</li>
+<li>Если автоматически не вышло: установите <strong>V2rayTun</strong> или <strong>Happ Plus</strong> из Google Play (или APK с <a class="text-primary hover:underline" href="https://github.com/hiddify/hiddify-next/releases" target="_blank">GitHub</a>)</li>
+<li>Откройте → <strong>«+»</strong> → <strong>«Добавить подписку»</strong> (или отсканируйте QR), вставьте ссылку подписки</li>
+<li>Выберите профиль и нажмите кнопку подключения. Разрешите создание VPN-подключения</li>
+</ol>
+</div>
+
+<div id="platform-windows" class="platform-content hidden">
+<ol class="text-on-surface-variant text-sm space-y-2 list-decimal list-inside">
+<li>Скачайте <strong>Hiddify</strong> с <a class="text-primary hover:underline" href="https://github.com/hiddify/hiddify-next/releases" target="_blank">GitHub Releases</a> (файл <code>Hiddify-Windows-Setup-x64.exe</code>)</li>
+<li>Установите и запустите Hiddify</li>
+<li>Скопируйте <strong>ссылку подписки</strong> из блока выше → в Hiddify нажмите <strong>«Добавить из буфера»</strong></li>
+<li>Переключите тумблер в положение <strong>«Подключено»</strong></li>
+</ol>
+</div>
+
+<div id="platform-macos" class="platform-content hidden">
+<ol class="text-on-surface-variant text-sm space-y-2 list-decimal list-inside">
+<li>Установите <strong>V2Box</strong> из Mac App Store или <strong>Hiddify</strong> с <a class="text-primary hover:underline" href="https://github.com/hiddify/hiddify-next/releases" target="_blank">GitHub</a></li>
+<li>Откройте → <strong>«+»</strong> → <strong>«Импорт из буфера обмена»</strong></li>
+<li>Вставьте <strong>ссылку подписки</strong> или VLESS-ключ из блоков выше</li>
+<li>Нажмите <strong>«Подключиться»</strong> и разрешите добавление VPN-профиля в macOS</li>
+</ol>
+</div>
+
+<div class="mt-4 pt-4 border-t border-outline-variant/20 text-xs text-on-surface-variant">
+<strong class="text-on-surface">Совет:</strong> используйте <strong>ссылку подписки</strong>, а не сырой VLESS-ключ — тогда при смене сервера клиент подтянет изменения сам.
+</div>
+</div>
+</details>
+
+<button id="reset-btn" class="mt-3 border border-outline hover:border-primary hover:text-primary text-on-surface-variant py-3 rounded-lg font-medium w-full active:scale-[0.98] transition-colors text-sm uppercase tracking-wider">К моим ключам</button>
+</div>
+</section>
+
+<!-- Feature Section -->
+<section id="marketing-section" class="px-5 py-10 max-w-3xl mx-auto">
+<div class="text-[11px] text-on-surface-variant uppercase tracking-[0.12em] mb-2">Архитектура</div>
+<h2 class="font-headline text-2xl font-bold mb-6">Современные протоколы</h2>
+<div class="grid grid-cols-1 gap-3">
+<div class="wx-card rounded-xl p-5 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-[0.04] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
+<span class="material-symbols-outlined text-[120px]">speed</span>
+</div>
+<div class="relative z-10">
+<div class="w-10 h-10 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-[20px]">bolt</span>
+</div>
+<h3 class="font-headline text-lg font-bold mb-1.5">Скорость</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">VLESS+Reality по TCP и Hysteria 2 по UDP. Клиент сам выбирает рабочий — никаких ручных переключений.</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="wx-card rounded-xl p-5">
+<div class="w-10 h-10 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-[20px]">visibility_off</span>
+</div>
+<h3 class="font-headline text-base font-bold mb-1.5">No Logs</h3>
+<p class="text-on-surface-variant text-xs leading-relaxed">Содержимое трафика не пишется. Только данные сессии и подписки.</p>
+</div>
+<div class="wx-card rounded-xl p-5">
+<div class="w-10 h-10 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-primary text-[20px]">public</span>
+</div>
+<h3 class="font-headline text-base font-bold mb-1.5">Глобально</h3>
+<p class="text-on-surface-variant text-xs leading-relaxed">4 страны на старте: NL · USA · FI · FR. Failover между ними.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Status Section -->
+<section id="map-section" class="px-5 py-6 max-w-3xl mx-auto">
+<div class="wx-card rounded-2xl overflow-hidden relative">
+<div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: radial-gradient(circle at 30% 50%, var(--wx-cyan) 0%, transparent 50%);"></div>
+<div class="relative p-6 flex items-center justify-between">
+<div>
+<div class="text-primary text-[11px] font-bold tracking-[0.12em] uppercase mb-1.5">Current node</div>
+<div class="text-lg font-headline font-bold">Amsterdam · NL</div>
+<div class="text-on-surface-variant text-xs font-mono mt-1">109.248.162.180</div>
+</div>
+<div class="wx-chip wx-chip-success">
+<span class="w-1.5 h-1.5 bg-[#00E78B] rounded-full animate-pulse"></span>
+Protected
+</div>
+</div>
+</div>
+</section>
+</main>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start md:items-center justify-center p-4 overflow-y-auto">
+<div class="wx-card-elevated w-full max-w-lg rounded-2xl p-6 my-8 relative">
+<button id="payment-close-btn" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors" aria-label="Закрыть">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="text-[11px] text-primary uppercase tracking-[0.12em] font-bold mb-1">Подписка</div>
+<h2 id="payment-modal-title" class="font-headline text-xl font-bold mb-2">Оформить подписку</h2>
+<p id="payment-modal-subtitle" class="text-on-surface-variant text-xs mb-5 leading-relaxed">Подписка нужна для создания и работы ключей. После перевода нажмите «Я оплатил» — админ подтвердит.</p>
+
+<div id="renewal-preview" class="hidden wx-card border-primary/40 rounded-lg p-4 mb-4 text-sm"></div>
+
+<label class="text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.12em]">Тариф</label>
+<div id="tariff-grid" class="grid grid-cols-2 gap-2 mt-2 mb-5">
+<div class="wx-skel wx-skel-tile"></div>
+<div class="wx-skel wx-skel-tile"></div>
+<div class="wx-skel wx-skel-tile"></div>
+<div class="wx-skel wx-skel-tile"></div>
+</div>
+
+<div id="payment-error" class="text-error text-xs mb-3 hidden"></div>
+
+<!-- Оплата через lava.top (карта / СБП — юзер выбирает на странице оплаты). -->
+<button id="lava-pay-btn" class="primary-gradient py-3.5 rounded-lg font-bold text-sm w-full active:scale-[0.98] transition-all mb-4 disabled:opacity-40 uppercase tracking-wider">
+<span id="lava-pay-btn-label">Оплатить подписку</span>
+</button>
+
+<div class="border-t border-outline-variant pt-5">
+<label class="text-[11px] text-on-surface-variant font-semibold uppercase tracking-[0.12em]">Или промокод</label>
+<div class="flex flex-col sm:flex-row gap-2 mt-2">
+<input id="promo-input" placeholder="PROMO2025" autocomplete="off" class="wx-input flex-1 min-w-0 rounded-lg px-4 py-3 font-mono uppercase text-sm">
+<button id="promo-btn" class="border border-primary/40 hover:border-primary text-primary px-5 py-3 rounded-lg font-semibold text-xs uppercase tracking-wider transition-colors">Активировать</button>
+</div>
+<div id="promo-msg" class="text-xs mt-2 hidden"></div>
+</div>
+</div>
+</div>
+
+<!-- Client Picker Modal -->
+<div id="client-picker-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start md:items-center justify-center p-4 overflow-y-auto">
+<div class="wx-card-elevated w-full max-w-md rounded-2xl p-6 my-8 relative">
+<button class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors" data-close-modal="client-picker-modal" aria-label="Закрыть">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="text-[11px] text-primary uppercase tracking-[0.12em] font-bold mb-1">Импорт</div>
+<h2 class="font-headline text-xl font-bold mb-2">Открыть в приложении</h2>
+<p class="text-on-surface-variant text-xs mb-5">Нажмите на ваш клиент — ключ импортируется автоматически.</p>
+
+<div class="space-y-2">
+<a id="open-happ" href="#" class="flex items-center gap-3 p-3.5 wx-card hover:border-primary rounded-lg transition-colors text-left group">
+<div class="w-10 h-10 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">shield</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-bold text-on-surface text-sm">Happ Plus</div>
+<div class="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">iOS · Android · Windows</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">arrow_forward</span>
+</a>
+</div>
+
+<div class="border-t border-outline-variant mt-5 pt-5 text-center">
+<p class="text-xs text-on-surface-variant mb-1">Нет ни одного из этих приложений?</p>
+<p class="text-sm text-on-surface mb-3">Установите <strong>Happ Plus</strong>:</p>
+<div class="flex gap-2 justify-center flex-wrap">
+<a href="https://apps.apple.com/search?term=Happ%20Plus" target="_blank" rel="noopener" class="border border-outline hover:border-primary text-on-surface hover:text-primary px-4 py-2 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">apple</span> App Store
+</a>
+<a href="https://play.google.com/store/search?q=Happ%20Plus&c=apps" target="_blank" rel="noopener" class="border border-outline hover:border-primary text-on-surface hover:text-primary px-4 py-2 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">android</span> Google Play
+</a>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div id="privacy-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start md:items-center justify-center p-4 overflow-y-auto">
+<div class="wx-card-elevated w-full max-w-lg rounded-2xl p-6 my-8 relative">
+<button class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors" data-close-modal="privacy-modal" aria-label="Закрыть">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h2 class="font-headline text-2xl font-bold mb-4">Политика конфиденциальности</h2>
+<div class="text-sm text-on-surface-variant space-y-3 max-h-[70vh] overflow-y-auto pr-2 text-left">
+<p class="text-xs text-on-surface-variant/70">Дата вступления в силу: 25.04.2026</p>
+<p><strong class="text-on-surface">1. Общие положения.</strong> Настоящая Политика описывает порядок обработки персональных данных пользователей сервиса WIREX (далее — Сервис). Используя Сервис, вы соглашаетесь с условиями Политики. Если вы не согласны — не используйте Сервис.</p>
+<p><strong class="text-on-surface">2. Какие данные мы обрабатываем.</strong></p>
+<ul class="list-disc pl-5 space-y-1">
+<li>Адрес электронной почты — указывается вами при регистрации, используется для отправки одноразовых кодов авторизации (OTP) и связи по вопросам обслуживания.</li>
+<li>IP-адрес — фиксируется автоматически, используется для защиты от автоматизированных злоупотреблений (rate-limit).</li>
+<li>Технические метаданные сессии — идентификатор сессии, время последней активности, выбранный сервер.</li>
+<li>Данные о подписке — статус подписки, история продлений, использованные промокоды.</li>
+</ul>
+<p>Сервис <strong class="text-on-surface">не собирает</strong> содержимое вашего трафика, посещаемые сайты или DNS-запросы. Сервис не использует системы веб-аналитики (Google Analytics, Яндекс.Метрика и т.п.). Платёжные реквизиты карт не обрабатываются и не хранятся — оплата проходит через сторонний сервис lava.top.</p>
+<p><strong class="text-on-surface">3. Цели обработки.</strong> Предоставление доступа к Сервису, аутентификация пользователя, защита от злоупотреблений, биллинг и контроль срока подписки, связь по вопросам работы Сервиса.</p>
+<p><strong class="text-on-surface">4. Правовое основание.</strong> Обработка осуществляется на основании вашего согласия (п. 1 ч. 1 ст. 6 Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных»), а также для исполнения договора, стороной которого вы являетесь.</p>
+<p><strong class="text-on-surface">5. Хранение и передача.</strong> Данные хранятся на серверах в дата-центре в Амстердаме (Нидерланды) с ограниченным доступом. Передача третьим лицам производится только: (а) SMTP-провайдеру для отправки OTP-кода на email; (б) платёжному сервису lava.top для проведения оплаты подписки; (в) по требованию уполномоченных государственных органов в порядке, установленном законом.</p>
+<p><strong class="text-on-surface">6. Срок хранения.</strong> Данные хранятся всё время, пока ваш аккаунт активен. После удаления аккаунта данные удаляются в течение 30 дней, за исключением случаев, когда хранение обязательно по закону.</p>
+<p><strong class="text-on-surface">7. Cookie и локальное хранилище.</strong> Сервис не использует cookie. Для сохранения сессии используется localStorage браузера (токен сессии и email) — эти данные хранятся локально на вашем устройстве и могут быть удалены вами в любой момент через настройки браузера или нажатием «Выйти».</p>
+<p><strong class="text-on-surface">8. Ваши права.</strong> Вы имеете право: получить информацию о ваших данных, требовать их уточнения, блокирования или удаления, отозвать согласие на обработку, обжаловать действия Сервиса в Роскомнадзор. Запросы направляйте на email поддержки — мы рассмотрим обращение в течение 30 дней.</p>
+<p><strong class="text-on-surface">9. Изменения.</strong> Мы можем обновлять Политику. Актуальная версия всегда доступна на этой странице.</p>
+</div>
+</div>
+</div>
+
+<!-- PD Consent Modal -->
+<div id="consent-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start md:items-center justify-center p-4 overflow-y-auto">
+<div class="wx-card-elevated w-full max-w-lg rounded-2xl p-6 my-8 relative">
+<button class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors" data-close-modal="consent-modal" aria-label="Закрыть">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h2 class="font-headline text-2xl font-bold mb-4">Согласие на обработку персональных данных</h2>
+<div class="text-sm text-on-surface-variant space-y-3 max-h-[70vh] overflow-y-auto pr-2 text-left">
+<p>Проставляя соответствующую отметку и нажимая кнопку «Отправить код», я подтверждаю своё согласие сервису WIREX на обработку моих персональных данных в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
+<p><strong class="text-on-surface">1. Состав данных:</strong> адрес электронной почты, IP-адрес, технические данные сессии (идентификатор сессии, время активности, выбранный сервер), данные о подписке (статус, история продлений, использованные промокоды).</p>
+<p><strong class="text-on-surface">2. Цели обработки:</strong> регистрация и аутентификация в Сервисе, защита Сервиса от злоупотреблений, биллинг подписки, связь по вопросам обслуживания.</p>
+<p><strong class="text-on-surface">3. Перечень действий:</strong> сбор, запись, систематизация, накопление, хранение, уточнение, использование, передача (предоставление третьим лицам в случаях, описанных в Политике конфиденциальности — SMTP-провайдеру для отправки OTP и платёжному сервису lava.top для проведения оплаты), блокирование, удаление, уничтожение.</p>
+<p><strong class="text-on-surface">4. Способы обработки:</strong> с использованием средств автоматизации и без таковых.</p>
+<p><strong class="text-on-surface">5. Срок действия согласия:</strong> согласие действует с момента его предоставления и до момента отзыва. Согласие может быть отозвано в любой момент путём направления письменного уведомления на email поддержки. После отзыва данные удаляются в течение 30 дней, за исключением случаев, когда хранение обязательно по закону.</p>
+<p><strong class="text-on-surface">6. Подтверждение ознакомления.</strong> Я подтверждаю, что ознакомлен(а) с Политикой конфиденциальности Сервиса, мне разъяснены мои права в области защиты персональных данных, и я понимаю последствия отказа от предоставления согласия.</p>
+</div>
+</div>
+</div>
+
+<!-- Footer -->
+<footer class="w-full bg-black border-t border-outline-variant mt-8">
+<div class="w-full max-w-3xl mx-auto px-5 py-10 flex flex-col items-center gap-6 text-center">
+<div class="flex items-center gap-2">
+<img src="/static/logo.svg" alt="WIREX" class="h-6 w-6 rounded">
+<span class="text-[16px] leading-none font-bold text-on-surface font-headline tracking-wide">WIR<span class="text-primary">Σ</span>X</span>
+</div>
+<div class="flex flex-wrap justify-center gap-5 text-on-surface-variant text-xs uppercase tracking-[0.12em] font-medium">
+<button type="button" class="hover:text-primary transition-colors cursor-pointer" data-open-modal="privacy-modal">Privacy</button>
+<button type="button" class="hover:text-primary transition-colors cursor-pointer" data-open-modal="consent-modal">Consent</button>
+<a class="hover:text-primary transition-colors" href="#">Protocols</a>
+<a class="hover:text-primary transition-colors" href="#">Status</a>
+</div>
+<div class="text-on-surface-variant/60 text-[10px] tracking-[0.2em] font-mono uppercase">
+© 2026 WIRΣX · Encrypted Access
+</div>
+</div>
+</footer>
+
+<script>
+let pendingEmail = '';
+let currentSubUrl = '';
+let currentSubSingboxUrl = '';
+let currentSubXrayUrl = '';
+let currentVlessUrl = '';
+let currentHy2Url = '';
+let userEmail = localStorage.getItem('user_email') || '';
+let sessionToken = localStorage.getItem('session_token');
+let selectedServer = null;
+const API_URL = 'https://api.wirex.online:8443';
+let serversList = {};
+let countdownTimer = null;
+
+// Функция для показа уведомлений
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    const bg = type === 'success' ? 'bg-green-500/90'
+             : type === 'info'    ? 'bg-cyan-500/90'
+             : 'bg-red-500/90';
+    toast.className = `fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:min-w-[300px] p-4 rounded-xl z-50 animate-slide-up ${bg} text-white text-center font-medium`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3000);
+}
+
+function updateSendBtnState() {
+    const btn = document.getElementById('send-code-btn');
+    if (!btn) return;
+    if (countdownTimer) return;
+    const c1 = document.getElementById('consent-privacy')?.checked;
+    const c2 = document.getElementById('consent-pd')?.checked;
+    btn.disabled = !(c1 && c2);
+}
+
+document.getElementById('consent-privacy')?.addEventListener('change', updateSendBtnState);
+document.getElementById('consent-pd')?.addEventListener('change', updateSendBtnState);
+
+function openModal(id) {
+    const m = document.getElementById(id);
+    if (m) m.classList.remove('hidden');
+}
+function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m) m.classList.add('hidden');
+}
+document.querySelectorAll('[data-open-modal]').forEach(el => {
+    el.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openModal(el.dataset.openModal);
+    });
+});
+document.querySelectorAll('[data-close-modal]').forEach(el => {
+    el.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeModal(el.dataset.closeModal);
+    });
+});
+['privacy-modal', 'consent-modal', 'client-picker-modal'].forEach(id => {
+    const m = document.getElementById(id);
+    if (m) m.addEventListener('click', (e) => { if (e.target === m) closeModal(id); });
+});
+
+function updateSubStatusChip() {
+    const chip = document.getElementById('sub-status-chip');
+    if (!chip) return;
+    if (!sessionToken) { chip.classList.add('hidden'); return; }
+
+    chip.style.cssText = '';
+    let text = '', cls = 'wx-chip-muted', dot = '';
+
+    if (pendingRequest) {
+        text = 'Проверка';
+        cls = 'wx-chip-muted';
+        dot = '<span class="w-1.5 h-1.5 bg-on-surface-variant rounded-full"></span>';
+    } else if (currentSub && currentSub.active) {
+        if (currentSub.plan === 'unlimited') {
+            text = '∞';
+            cls = 'wx-chip-success';
+            dot = '<span class="w-1.5 h-1.5 bg-[#00E78B] rounded-full animate-pulse"></span>';
+        } else {
+            const days = subDaysLeft();
+            if (days > 7) {
+                text = `${days} дн`;
+                cls = 'wx-chip-success';
+                dot = '<span class="w-1.5 h-1.5 bg-[#00E78B] rounded-full"></span>';
+            } else if (days > 0) {
+                text = `${days} дн`;
+                cls = '';
+                chip.style.background = 'rgba(255,176,32,.08)';
+                chip.style.color = '#FFB020';
+                chip.style.border = '1px solid rgba(255,176,32,.3)';
+                dot = '<span class="w-1.5 h-1.5 bg-[#FFB020] rounded-full animate-pulse"></span>';
+            } else {
+                text = 'Истекла';
+                cls = 'wx-chip-muted';
+            }
+        }
+    } else {
+        text = 'Нет подписки';
+        cls = 'wx-chip-muted';
+    }
+
+    chip.innerHTML = '<span class="inline-flex items-center gap-1.5">' + dot + '<span>' + text + '</span></span>';
+    chip.className = 'wx-chip ' + cls + ' flex-shrink-0';
+    chip.classList.remove('hidden');
+}
+
+function buildClientDeepLinks(subUrl, vlessUrl, hy2Url, subXrayUrl) {
+    const enc = encodeURIComponent(subUrl);
+    // Все клиенты теперь импортируют URL-подписку с /sub/<file>: внутри
+    // 3 vless (Auto/LTE/Backup), Happ показывает их как 3 сервера в группе.
+    // Xray JSON отказались — у Happ XrayCore выдавал «not all dependencies
+    // resolved». /sub-xray/ остаётся для CLI sing-box / десктопов.
+    return {
+        v2box: `v2box://install-sub?url=${enc}&name=WIREX`,
+        v2raytun: `v2raytun://import/${enc}`,
+        happ: `happ://add/${enc}`,
+    };
+}
+
+document.getElementById('auto-import-btn')?.addEventListener('click', () => {
+    if (!currentSubUrl) {
+        showToast('Не нашёл ссылку подписки', 'error');
+        return;
+    }
+    const links = buildClientDeepLinks(currentSubUrl, currentVlessUrl, currentHy2Url, currentSubXrayUrl);
+    const v2box = document.getElementById('open-v2box');
+    const v2raytun = document.getElementById('open-v2raytun');
+    const happ = document.getElementById('open-happ');
+    if (v2box) v2box.href = links.v2box;
+    if (v2raytun) v2raytun.href = links.v2raytun;
+    if (happ) happ.href = links.happ;
+    openModal('client-picker-modal');
+});
+
+['open-v2box', 'open-v2raytun', 'open-happ'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+        setTimeout(() => closeModal('client-picker-modal'), 800);
+    });
+});
+
+// OTP input handling
+const digits = document.querySelectorAll('.digit-input');
+
+function fillOtp(value) {
+    const numbers = String(value || '').replace(/\D/g, '').slice(0, digits.length).split('');
+    digits.forEach((d, i) => d.value = numbers[i] || '');
+    const next = digits[numbers.length] || digits[digits.length - 1];
+    next.focus();
+    if (numbers.length === digits.length) {
+        document.getElementById('verify-code-btn').click();
+    }
+}
+
+digits.forEach((digit, index) => {
+    digit.addEventListener('input', (e) => {
+        const raw = e.target.value;
+        // Если вставили несколько цифр в одно поле — распределяем по всем
+        if (raw.length > 1) {
+            fillOtp(raw);
+            return;
+        }
+        e.target.value = raw.replace(/\D/g, '');
+        if (e.target.value.length === 1 && index < digits.length - 1) {
+            digits[index + 1].focus();
+        }
+        if ([...digits].every(d => d.value.length === 1)) {
+            document.getElementById('verify-code-btn').click();
+        }
+    });
+
+    digit.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            digits[index - 1].focus();
+            digits[index - 1].value = '';
+        }
+    });
+
+    digit.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        fillOtp(paste);
+    });
+});
+
+document.getElementById('paste-code-btn')?.addEventListener('click', async () => {
+    try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            const text = await navigator.clipboard.readText();
+            fillOtp(text);
+        } else {
+            digits[0].focus();
+            showToast('Вставьте код в поле вручную (Ctrl+V)', 'success');
+        }
+    } catch (e) {
+        digits[0].focus();
+        showToast('Разрешите доступ к буферу или вставьте вручную', 'error');
+    }
+});
+
+function getOtpCode() {
+    let code = '';
+    digits.forEach(digit => {
+        code += digit.value;
+    });
+    return code;
+}
+
+// Send code to email
+document.getElementById('send-code-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const errorEl = document.getElementById('email-error');
+    
+    if (!email) {
+        errorEl.textContent = 'Введите email';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errorEl.textContent = 'Введите корректный email';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    errorEl.classList.add('hidden');
+    const btn = document.getElementById('send-code-btn');
+    btn.disabled = true;
+    
+    let seconds = 60;
+    btn.textContent = `Повторно через ${seconds}с`;
+    
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            btn.textContent = 'Отправить код';
+            updateSendBtnState();
+        } else {
+            btn.textContent = `Повторно через ${seconds}с`;
+        }
+    }, 1000);
+    
+    try {
+        const res = await fetch(`${API_URL}/api/send-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            errorEl.textContent = data.error;
+            errorEl.classList.remove('hidden');
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            btn.textContent = 'Отправить код';
+            updateSendBtnState();
+            return;
+        }
+        
+        pendingEmail = email;
+        document.getElementById('otp-email').textContent = email;
+        document.getElementById('email-section').classList.add('hidden');
+        document.getElementById('otp-section').classList.remove('hidden');
+        setMarketingVisible(true);
+        
+        digits.forEach(d => d.value = '');
+        digits[0].focus();
+        
+        showToast('Код отправлен на почту!', 'success');
+        
+    } catch (e) {
+        errorEl.textContent = 'Ошибка соединения';
+        errorEl.classList.remove('hidden');
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        btn.textContent = 'Отправить код';
+        updateSendBtnState();
+    }
+});
+
+// Verify OTP code
+document.getElementById('verify-code-btn')?.addEventListener('click', async () => {
+    const code = getOtpCode();
+    const errorEl = document.getElementById('otp-error');
+    
+    if (code.length !== 6) {
+        errorEl.textContent = 'Введите 6-значный код';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    errorEl.classList.add('hidden');
+    const btn = document.getElementById('verify-code-btn');
+    btn.disabled = true;
+    btn.textContent = 'Проверка...';
+    
+    try {
+        const res = await fetch(`${API_URL}/api/verify-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingEmail, code })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            errorEl.textContent = data.error;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        
+        localStorage.setItem('session_token', data.token);
+        localStorage.setItem('user_email', data.email);
+        sessionToken = data.token;
+        userEmail = data.email;
+
+        document.getElementById('user-email-display').textContent = data.email;
+        document.getElementById('user-email-display').classList.remove('hidden');
+        document.getElementById('logout-btn').classList.remove('hidden');
+
+        showToast('Успешная авторизация!', 'success');
+        loadMyKeys();
+        
+    } catch (e) {
+        errorEl.textContent = 'Ошибка соединения';
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Подтвердить';
+    }
+});
+
+// Resend code
+document.getElementById('resend-code-btn')?.addEventListener('click', async () => {
+    const errorEl = document.getElementById('otp-error');
+    const btn = document.getElementById('resend-code-btn');
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
+    
+    try {
+        const res = await fetch(`${API_URL}/api/send-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingEmail })
+        });
+        
+        if (res.ok) {
+            showToast('Код отправлен повторно!', 'success');
+            digits.forEach(d => d.value = '');
+            digits[0].focus();
+        }
+    } catch (e) {
+        errorEl.textContent = 'Ошибка';
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Отправить код повторно';
+    }
+});
+
+// Logout
+document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    try {
+        await fetch(`${API_URL}/api/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken })
+        });
+    } catch (e) { /* offline logout — всё равно чистим локально */ }
+    localStorage.removeItem('session_token');
+    localStorage.removeItem('user_email');
+    location.reload();
+});
+
+// Load servers (только загружаем; рендер происходит в renderServerButtons при показе секции)
+fetch(`${API_URL}/api/servers`)
+    .then(r => r.json())
+    .then(servers => { serversList = servers; });
+
+function renderServerButtons(busyServers = [], allowedServer = null) {
+    const container = document.getElementById('server-list');
+    if (!container) return 0;
+    container.innerHTML = '';
+    selectedServer = null;
+    let available = 0;
+
+    for (const [key, s] of Object.entries(serversList)) {
+        const isBusy = busyServers.includes(key) && key !== allowedServer;
+        const isFull = !!s.full && key !== allowedServer;
+        const disabled = isBusy || isFull;
+        const btn = document.createElement('button');
+        btn.className = 'server-btn wx-card p-4 rounded-xl text-center transition-all';
+        btn.setAttribute('data-server', key);
+        btn.disabled = disabled;
+        let label = '';
+        if (isBusy) label = '<div class="text-[10px] mt-1 text-on-surface-variant">уже есть ключ</div>';
+        else if (isFull) label = '<div class="text-[10px] mt-1 text-error">сервер заполнен</div>';
+        else if (typeof s.users_count === 'number' && typeof s.max_users === 'number') {
+            const left = s.max_users - s.users_count;
+            if (left > 0 && left <= 5) {
+                const mod10 = left % 10, mod100 = left % 100;
+                const word = (mod10 === 1 && mod100 !== 11) ? 'ключ'
+                           : (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) ? 'ключа'
+                           : 'ключей';
+                label = `<div class="text-[10px] mt-1 text-error font-semibold">Осталось ${left} ${word}!</div>`;
+            }
+        }
+        btn.innerHTML = `
+            <span class="text-3xl mb-2 block">${s.flag}</span>
+            <span class="font-semibold">${s.name}</span>
+            ${label}
+        `;
+        if (disabled) {
+            btn.classList.add('opacity-40', 'cursor-not-allowed');
+        } else {
+            btn.classList.add('hover:scale-105');
+            btn.onclick = () => {
+                document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedServer = key;
+            };
+            available += 1;
+            if (!selectedServer) btn.click();
+        }
+        container.appendChild(btn);
+    }
+    return available;
+}
+
+async function refreshServersList() {
+    try {
+        const res = await fetch(`${API_URL}/api/servers`);
+        if (res.ok) serversList = await res.json();
+    } catch (e) { /* ignore */ }
+}
+
+let myKeys = [];
+const MAX_KEYS_PER_USER = 2;  // Лимит: 2 ключа на юзера. Unlimited-план снимает лимит.
+let currentSub = null;
+let pendingRequest = null;
+let tariffs = [];
+let paymentInfo = null;
+let selectedTariffId = null;
+let replaceOldUuid = null;  // uuid заменяемого ключа; null = создание нового
+let replaceOldServer = null; // server заменяемого ключа (разрешается остаться на нём)
+let suggestedUsername = '';
+
+function hideAllSections() {
+    ['email-section','otp-section','my-keys-section','server-section','result-section']
+        .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+}
+
+function setMarketingVisible(show) {
+    ['marketing-section','map-section'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', !show);
+    });
+}
+
+function showEmailSection() {
+    hideAllSections();
+    document.getElementById('email-section').classList.remove('hidden');
+    setMarketingVisible(true);
+}
+
+async function fetchSuggestedUsername() {
+    if (suggestedUsername) return suggestedUsername;
+    try {
+        const res = await fetch(`${API_URL}/api/suggest-username`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken })
+        });
+        const data = await res.json();
+        if (res.ok && data.username) suggestedUsername = data.username;
+    } catch (e) { /* ignore */ }
+    return suggestedUsername;
+}
+
+async function showServerSection({ replaceKey = null } = {}) {
+    const subActive = !!(currentSub && currentSub.active);
+    if (!subActive) {
+        openPaymentModal();
+        return;
+    }
+    replaceOldUuid = replaceKey ? replaceKey.uuid : null;
+    replaceOldServer = replaceKey ? replaceKey.server : null;
+    const isReplace = !!replaceKey;
+
+    hideAllSections();
+    document.getElementById('server-section').classList.remove('hidden');
+    setMarketingVisible(false);
+
+    // Server picker убран — backend сам выбирает recommended-сервер,
+    // а подписка отдаёт 3 entries (Auto/LTE/Backup). Никаких занятых/свободных.
+    selectedServer = '';
+
+    const title = document.getElementById('server-section-title');
+    const btn = document.getElementById('create-key-btn');
+    if (title) title.textContent = isReplace ? 'Готовим новый ключ' : 'Готовим ключ';
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = isReplace ? 'Заменить ключ' : 'Сгенерировать ключ';
+    }
+
+    const errorEl = document.getElementById('create-error');
+    if (errorEl) errorEl.classList.add('hidden');
+
+    // Подставляем username из email — для бэка хватит, юзеру выбирать не надо
+    const name = await fetchSuggestedUsername();
+    const inp = document.getElementById('username');
+    if (inp) inp.value = (isReplace && replaceKey.username) ? replaceKey.username : (name || '');
+
+    window.scrollTo({ top: document.getElementById('server-section').offsetTop - 80, behavior: 'smooth' });
+}
+
+function showResult(data, toastMessage) {
+    hideAllSections();
+    setMarketingVisible(false);
+    document.getElementById('result-section').classList.remove('hidden');
+    document.getElementById('qr-img').src = 'data:image/png;base64,' + data.qr;
+    document.getElementById('vless-url').textContent = data.vless_url;
+    document.getElementById('sub-url').textContent = data.sub_url;
+    currentSubUrl = data.sub_url || '';
+    currentSubSingboxUrl = data.sub_singbox_url || '';
+    currentSubXrayUrl = data.sub_xray_url || '';
+    currentVlessUrl = data.vless_url || '';
+    currentHy2Url = data.hysteria_url || '';
+    document.getElementById('result-info').textContent = `${data.username} — ${data.server_name || data.server}`;
+
+    const hy2Tab = document.getElementById('hy2-tab-btn');
+    if (data.hysteria_url) {
+        document.getElementById('hy2-qr-img').src = 'data:image/png;base64,' + data.hysteria_qr;
+        document.getElementById('hy2-url').textContent = data.hysteria_url;
+        hy2Tab.classList.remove('hidden');
+    } else {
+        hy2Tab.classList.add('hidden');
+    }
+    switchProtoTab('vless');
+
+    window.scrollTo({ top: document.getElementById('result-section').offsetTop - 80, behavior: 'smooth' });
+    if (toastMessage) showToast(toastMessage, 'success');
+}
+
+function switchProtoTab(proto) {
+    document.querySelectorAll('.proto-tab').forEach(b => {
+        const active = b.dataset.proto === proto;
+        b.classList.toggle('primary-gradient', active);
+        b.classList.toggle('text-on-primary', active);
+        b.classList.toggle('bg-surface-container', !active);
+        b.classList.toggle('text-on-surface-variant', !active);
+    });
+    document.querySelectorAll('.proto-content').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.proto !== proto);
+    });
+}
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.proto-tab');
+    if (btn) switchProtoTab(btn.dataset.proto);
+});
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function fmtDate(iso) {
+    if (!iso) return '';
+    try {
+        const d = new Date(iso);
+        return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    } catch (e) { return iso; }
+}
+
+async function loadMyKeys() {
+    replaceOldUuid = null;  // выход из flow замены, если юзер вернулся
+    replaceOldServer = null;
+    hideAllSections();
+    setMarketingVisible(false);
+    document.getElementById('my-keys-section').classList.remove('hidden');
+    document.getElementById('my-keys-loading').classList.remove('hidden');
+    document.getElementById('my-keys-empty').classList.add('hidden');
+    document.getElementById('my-keys-list').classList.add('hidden');
+
+    try {
+        const [keysRes, subRes] = await Promise.all([
+            fetch(`${API_URL}/api/my-keys`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken })
+            }),
+            fetch(`${API_URL}/api/subscription/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken })
+            })
+        ]);
+
+        if (keysRes.status === 401 || subRes.status === 401) {
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user_email');
+            location.reload();
+            return;
+        }
+
+        const rawKeys = await keysRes.json();
+        // Дедуп по UUID — после миграции _ensure_user_on_all_servers один UUID
+        // живёт на N серверах (одна запись per server в users.json), но для юзера
+        // это логически один ключ (одна подписка с 3-mode).
+        const seenUuid = new Set();
+        myKeys = (Array.isArray(rawKeys) ? rawKeys : []).filter(k => {
+            if (!k || !k.uuid || seenUuid.has(k.uuid)) return false;
+            seenUuid.add(k.uuid);
+            return true;
+        });
+        const subData = await subRes.json();
+        currentSub = subData.subscription || null;
+        pendingRequest = subData.pending_request || null;
+        renderSubBanner();
+        renderMyKeys();
+        updateSubStatusChip();
+    } catch (e) {
+        console.error('[loadMyKeys] failed:', e);
+        showToast('Ошибка загрузки', 'error');
+    } finally {
+        document.getElementById('my-keys-loading').classList.add('hidden');
+    }
+
+    window.scrollTo({ top: document.getElementById('my-keys-section').offsetTop - 80, behavior: 'smooth' });
+}
+
+function subDaysLeft() {
+    if (!currentSub || !currentSub.expires_at) return 0;
+    try {
+        const d = new Date(currentSub.expires_at);
+        return Math.max(0, Math.ceil((d - new Date()) / 86400000));
+    } catch (e) { return 0; }
+}
+
+function subExpiresText() {
+    if (!currentSub || !currentSub.expires_at) return '';
+    try {
+        const d = new Date(currentSub.expires_at);
+        return `до ${d.toLocaleDateString('ru-RU')} · осталось ${subDaysLeft()} дн.`;
+    } catch (e) { return ''; }
+}
+
+function renderSubBanner() {
+    const el = document.getElementById('sub-banner');
+    if (!el) return;
+    el.classList.remove('hidden');
+
+    if (pendingRequest) {
+        const t = tariffs.find(t => t.id === pendingRequest.tariff);
+        const label = t ? t.label : pendingRequest.tariff;
+        el.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-yellow-400 mt-0.5">hourglass_top</span>
+                    <div>
+                        <div class="font-bold">Заявка на оплату отправлена</div>
+                        <div class="text-sm text-on-surface-variant">Тариф: ${escapeHtml(label)} · ${pendingRequest.price}₽. Админ подтвердит доступ в ближайшее время.</div>
+                    </div>
+                </div>
+                <button id="cancel-request-btn" class="border border-outline hover:border-error hover:text-error text-on-surface-variant px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider font-medium transition-colors">Отменить заявку</button>
+            </div>`;
+        document.getElementById('cancel-request-btn').onclick = cancelPaymentRequest;
+        return;
+    }
+
+    if (currentSub && currentSub.active) {
+        if (currentSub.plan === 'unlimited') {
+            el.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary mt-0.5">all_inclusive</span>
+                        <div>
+                            <div class="font-bold">Безлимитный доступ</div>
+                            <div class="text-sm text-on-surface-variant">У вас персональный доступ без ограничений.</div>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            el.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary mt-0.5">check_circle</span>
+                        <div>
+                            <div class="font-bold">Подписка активна</div>
+                            <div class="text-sm text-on-surface-variant">${escapeHtml(subExpiresText())}</div>
+                        </div>
+                    </div>
+                    <button id="extend-sub-btn" class="border border-primary/40 hover:border-primary text-primary px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors">Продлить</button>
+                </div>`;
+            document.getElementById('extend-sub-btn').onclick = openPaymentModal;
+        }
+    } else {
+        el.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-error mt-0.5">lock</span>
+                    <div>
+                        <div class="font-bold">Нет активной подписки</div>
+                        <div class="text-sm text-on-surface-variant">Для создания и работы ключей нужна подписка от 99₽/мес или промокод.</div>
+                    </div>
+                </div>
+                <button id="subscribe-btn" class="primary-gradient px-4 py-2.5 rounded-lg text-xs font-bold active:scale-[0.98] transition-all whitespace-nowrap uppercase tracking-wider">Оформить подписку</button>
+            </div>`;
+        document.getElementById('subscribe-btn').onclick = openPaymentModal;
+    }
+}
+
+async function cancelPaymentRequest() {
+    if (!confirm('Отменить заявку на оплату?')) return;
+    try {
+        const res = await fetch(`${API_URL}/api/subscription/cancel-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            showToast('Заявка отменена', 'success');
+            loadMyKeys();
+        } else {
+            showToast(data.error || 'Ошибка', 'error');
+        }
+    } catch (e) { showToast('Ошибка соединения', 'error'); }
+}
+
+async function ensureTariffs() {
+    if (tariffs.length) return;
+    try {
+        const [tRes, pRes] = await Promise.all([
+            fetch(`${API_URL}/api/tariffs`),
+            fetch(`${API_URL}/api/payment-info`)
+        ]);
+        tariffs = await tRes.json();
+        paymentInfo = await pRes.json();
+    } catch (e) { /* ignore */ }
+}
+
+function renderTariffGrid() {
+    const grid = document.getElementById('tariff-grid');
+    if (!tariffs.length) {
+        grid.innerHTML = '<div class="text-sm text-on-surface-variant col-span-full">Не удалось загрузить тарифы</div>';
+        return;
+    }
+    const cheapest = tariffs.reduce((m, t) => Math.min(m, t.price / t.days), Infinity);
+    const bestId = (tariffs.find(t => Math.abs((t.price / t.days) - cheapest) < 1e-6) || {}).id;
+    grid.innerHTML = tariffs.map(t => {
+        const perDay = (t.price / t.days);
+        const discount = cheapest > 0 ? Math.round(100 - (perDay / (tariffs[0].price / tariffs[0].days)) * 100) : 0;
+        const active = selectedTariffId === t.id;
+        const isBest = t.id === bestId && tariffs.length > 1;
+        return `
+            <button data-tariff="${t.id}" class="tariff-tile relative text-left p-3 rounded-lg border transition-all ${active ? 'border-primary bg-[rgba(245,245,245,0.06)] wx-glow-sm' : 'border-outline bg-surface-container hover:border-primary/60'}">
+                ${isBest ? `<div class="absolute -top-2 right-2 wx-chip wx-chip-cyan" style="font-size:9px;padding:2px 6px;letter-spacing:.1em;">Выгодно</div>` : ''}
+                <div class="text-[10px] text-on-surface-variant font-semibold uppercase tracking-[0.12em]">${escapeHtml(t.label)}</div>
+                <div class="text-xl font-bold font-headline mt-1 ${active ? 'text-primary' : ''}">${t.price}₽</div>
+                <div class="text-[10px] text-on-surface-variant mt-1 font-mono">~${perDay.toFixed(1)}₽/день${discount > 0 ? ` · -${discount}%` : ''}</div>
+            </button>`;
+    }).join('');
+    grid.querySelectorAll('[data-tariff]').forEach(btn => {
+        btn.onclick = () => {
+            selectedTariffId = btn.dataset.tariff;
+            renderTariffGrid();
+            updateRenewalPreview();
+            updateLavaButton();
+        };
+    });
+}
+
+function updateLavaButton() {
+    // Лейбл с ценой выбранного тарифа. Если lava недоступна или тариф не поддерживается —
+    // кнопка disabled, чтобы не дать кликнуть в пустоту.
+    const btn = document.getElementById('lava-pay-btn');
+    const label = document.getElementById('lava-pay-btn-label');
+    if (!btn) return;
+    const tariff = tariffs.find(t => t.id === selectedTariffId);
+    const lavaOn = !!(paymentInfo && paymentInfo.lava_enabled && tariff && tariff.card_pay_enabled);
+    if (lavaOn) {
+        btn.disabled = false;
+        label.textContent = `Оплатить подписку · ${tariff.price}₽`;
+    } else {
+        btn.disabled = true;
+        label.textContent = 'Оплата временно недоступна';
+    }
+}
+
+function updateRenewalPreview() {
+    // Оформляем заголовки модалки и показываем превью продления, если подписка активна.
+    // Лейбл кнопки оплаты ставит updateLavaButton.
+    const isRenewal = !!(currentSub && currentSub.active && currentSub.plan !== 'unlimited');
+    const isUnlimited = !!(currentSub && currentSub.active && currentSub.plan === 'unlimited');
+
+    const title = document.getElementById('payment-modal-title');
+    const subtitle = document.getElementById('payment-modal-subtitle');
+    const preview = document.getElementById('renewal-preview');
+
+    if (isUnlimited) {
+        if (title) title.textContent = 'Промокод или апгрейд';
+        if (subtitle) subtitle.textContent = 'У вас безлимитный доступ. Тариф можно не выбирать — используйте промокод.';
+        if (preview) preview.classList.add('hidden');
+        return;
+    }
+
+    if (isRenewal) {
+        if (title) title.textContent = 'Продлить подписку';
+        if (subtitle) subtitle.textContent = 'Оставшиеся дни сохраняются — новый срок прибавится к текущему.';
+
+        if (preview) {
+            const curr = new Date(currentSub.expires_at);
+            const selectedTariff = tariffs.find(t => t.id === selectedTariffId);
+            const daysLeft = Math.max(0, Math.ceil((curr - new Date()) / 86400000));
+            if (selectedTariff) {
+                const newExp = new Date(curr.getTime() + selectedTariff.days * 86400000);
+                preview.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <div class="text-on-surface-variant">Сейчас подписка до <strong class="text-on-surface">${curr.toLocaleDateString('ru-RU')}</strong> (осталось ${daysLeft} дн.)</div>
+                        <div class="text-on-surface-variant">После продления — <strong class="text-primary">${newExp.toLocaleDateString('ru-RU')}</strong> (+${selectedTariff.days} дн.)</div>
+                    </div>`;
+            } else {
+                preview.innerHTML = `<div class="text-on-surface-variant">Сейчас подписка до <strong class="text-on-surface">${curr.toLocaleDateString('ru-RU')}</strong> (осталось ${daysLeft} дн.). Выберите тариф для продления.</div>`;
+            }
+            preview.classList.remove('hidden');
+        }
+        return;
+    }
+
+    // Нет активной подписки — обычное «оформление».
+    if (title) title.textContent = 'Оформить подписку';
+    if (subtitle) subtitle.textContent = 'Для создания ключа и работы ускорителя нужна активная подписка. Оплата картой или СБП через lava.top.';
+    if (preview) preview.classList.add('hidden');
+}
+
+async function openPaymentModal() {
+    await ensureTariffs();
+    if (!selectedTariffId && tariffs.length) selectedTariffId = tariffs[0].id;
+    renderTariffGrid();
+    updateRenewalPreview();
+    updateLavaButton();
+    document.getElementById('payment-error').classList.add('hidden');
+    document.getElementById('promo-msg').classList.add('hidden');
+    document.getElementById('promo-input').value = '';
+    document.getElementById('payment-modal').classList.remove('hidden');
+}
+
+async function payViaLava() {
+    const err = document.getElementById('payment-error');
+    err.classList.add('hidden');
+    if (!selectedTariffId) {
+        err.textContent = 'Выберите тариф';
+        err.classList.remove('hidden');
+        return;
+    }
+    const btn = document.getElementById('lava-pay-btn');
+    const label = document.getElementById('lava-pay-btn-label');
+    const oldLabel = label.textContent;
+    btn.disabled = true;
+    label.textContent = 'Открываю lava.top…';
+    try {
+        const res = await fetch(`${API_URL}/api/payment/lava/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Idempotency-Key защищает от двойного клика — повторный запрос вернёт тот же invoice.
+                'Idempotency-Key': `lava-create-${selectedTariffId}-${Date.now()}`
+            },
+            body: JSON.stringify({ token: sessionToken, tariff: selectedTariffId })
+        });
+        const data = await res.json();
+        if (res.ok && data.payment_url) {
+            // Сохраняем contract_id, чтобы по возврату с lava подсветить статус.
+            try {
+                localStorage.setItem('wirex_pending_lava', JSON.stringify({
+                    contract_id: data.contract_id,
+                    tariff: selectedTariffId,
+                    started_at: Date.now()
+                }));
+            } catch (_) {}
+            window.location.href = data.payment_url;
+        } else {
+            err.textContent = data.error || 'Не удалось создать платёж';
+            err.classList.remove('hidden');
+            label.textContent = oldLabel;
+            btn.disabled = false;
+        }
+    } catch (e) {
+        err.textContent = 'Ошибка соединения';
+        err.classList.remove('hidden');
+        label.textContent = oldLabel;
+        btn.disabled = false;
+    }
+}
+
+async function checkPendingLavaPayment() {
+    // Вызывается на загрузке страницы. Если в localStorage есть pending contract,
+    // поллим /api/payment/lava/status пока не credited / failed / 5 мин таймаут.
+    let pending;
+    try { pending = JSON.parse(localStorage.getItem('wirex_pending_lava') || 'null'); }
+    catch (_) { pending = null; }
+    if (!pending || !pending.contract_id || !sessionToken) return;
+    // Старше 30 минут — считаем заброшенным
+    if (Date.now() - (pending.started_at || 0) > 30 * 60 * 1000) {
+        localStorage.removeItem('wirex_pending_lava');
+        return;
+    }
+    showToast('Проверяем оплату…', 'info');
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (Date.now() < deadline) {
+        try {
+            const res = await fetch(`${API_URL}/api/payment/lava/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken, contract_id: pending.contract_id })
+            });
+            if (res.ok) {
+                const d = await res.json();
+                if (d.status === 'credited') {
+                    localStorage.removeItem('wirex_pending_lava');
+                    showToast(`Оплата прошла! +${d.days} дней`, 'success');
+                    if (typeof loadMyKeys === 'function') loadMyKeys();
+                    return;
+                }
+                if (d.status === 'failed') {
+                    localStorage.removeItem('wirex_pending_lava');
+                    showToast('Оплата не прошла', 'error');
+                    return;
+                }
+            }
+        } catch (_) {}
+        await new Promise(r => setTimeout(r, 5000));
+    }
+    // 5 мин истекло — оставляем запись в localStorage, может позже подтянется
+    showToast('Оплата ещё обрабатывается. Обновите страницу через минуту.', 'info');
+}
+
+function closePaymentModal() {
+    document.getElementById('payment-modal').classList.add('hidden');
+}
+
+async function redeemPromo() {
+    const input = document.getElementById('promo-input');
+    const msg = document.getElementById('promo-msg');
+    const code = input.value.trim().toUpperCase();
+    if (!code) return;
+    msg.classList.add('hidden');
+    try {
+        const res = await fetch(`${API_URL}/api/promo/redeem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken, code })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            msg.textContent = data.unlimited ? 'Безлимит активирован!' : `Подписка продлена на ${data.days} дн.`;
+            msg.className = 'text-xs mt-2 text-primary';
+            msg.classList.remove('hidden');
+            showToast('Промокод активирован', 'success');
+            input.value = '';
+            // Обновляем подписку, не закрывая модалку — юзер остаётся на вкладке
+            // продления и видит обновлённый chip в шапке.
+            try {
+                const subRes = await fetch(`${API_URL}/api/subscription/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: sessionToken })
+                });
+                if (subRes.ok) {
+                    const subData = await subRes.json();
+                    currentSub = subData.subscription || null;
+                    pendingRequest = subData.pending_request || null;
+                    updateSubStatusChip();
+                }
+            } catch (_) { /* не критично — юзер увидит обновлённый статус при следующем переходе */ }
+        } else {
+            msg.textContent = data.error || 'Ошибка';
+            msg.className = 'text-xs mt-2 text-error';
+            msg.classList.remove('hidden');
+        }
+    } catch (e) {
+        msg.textContent = 'Ошибка соединения';
+        msg.className = 'text-xs mt-2 text-error';
+        msg.classList.remove('hidden');
+    }
+}
+
+function renderMyKeys() {
+    const list = document.getElementById('my-keys-list');
+    const empty = document.getElementById('my-keys-empty');
+    const newBtn = document.getElementById('new-key-btn');
+    const limitHint = document.getElementById('keys-limit-hint');
+
+    // Лимит: 2 ключа на юзера. Unlimited-план снимает лимит.
+    const isUnlimited = !!(currentSub && currentSub.active && currentSub.plan === 'unlimited');
+    const reachedLimit = !isUnlimited && myKeys.length >= MAX_KEYS_PER_USER;
+    if (newBtn) newBtn.classList.toggle('hidden', reachedLimit);
+    if (limitHint) limitHint.classList.toggle('hidden', !reachedLimit);
+
+    if (!myKeys.length) {
+        empty.classList.remove('hidden');
+        list.classList.add('hidden');
+        return;
+    }
+
+    empty.classList.add('hidden');
+    list.classList.remove('hidden');
+    list.innerHTML = myKeys.map((k, i) => `
+        <div class="wx-card p-5 rounded-xl flex flex-col">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="min-w-0">
+                    <div class="font-headline font-bold text-base truncate">${escapeHtml(k.username)}</div>
+                    <div class="text-[11px] text-on-surface-variant uppercase tracking-wider mt-0.5">${fmtDate(k.created)}</div>
+                </div>
+                <button class="text-on-surface-variant hover:text-error transition-colors flex-shrink-0" data-del="${i}" title="Удалить ключ" aria-label="Удалить">
+                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button class="primary-gradient py-2.5 rounded-lg font-semibold text-xs active:scale-[0.98] transition-all uppercase tracking-wider inline-flex items-center justify-center gap-1.5" data-show="${i}">
+                    <span class="material-symbols-outlined text-[14px]">qr_code_2</span> Открыть
+                </button>
+                <button class="border border-outline hover:border-primary hover:text-primary text-on-surface-variant py-2.5 rounded-lg font-semibold text-xs active:scale-[0.98] transition-colors uppercase tracking-wider inline-flex items-center justify-center gap-1.5" data-replace="${i}" title="Пересоздать ключ">
+                    <span class="material-symbols-outlined text-[14px]">swap_horiz</span> Сменить
+                </button>
+            </div>
+            <div class="text-[10px] text-on-surface-variant/70 font-mono truncate mt-3" title="${escapeHtml(k.sub_url)}">${escapeHtml(k.sub_url)}</div>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('[data-show]').forEach(btn => {
+        btn.onclick = () => showResult(myKeys[+btn.dataset.show]);
+    });
+    list.querySelectorAll('[data-del]').forEach(btn => {
+        btn.onclick = () => deleteMyKey(myKeys[+btn.dataset.del]);
+    });
+    list.querySelectorAll('[data-replace]').forEach(btn => {
+        btn.onclick = () => {
+            const k = myKeys[+btn.dataset.replace];
+            if (!confirm(`Пересоздать ключ на сервере ${k.server_name}? Старый ключ перестанет работать сразу после замены.`)) return;
+            showServerSection({ replaceKey: k });
+        };
+    });
+}
+
+async function deleteMyKey(key) {
+    if (!confirm(`Удалить ключ "${key.username}" (${key.server_name})? Подключение перестанет работать.`)) return;
+
+    try {
+        const res = await fetch(`${API_URL}/api/my-keys/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken, uuid: key.uuid, username: key.username })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            showToast('Ключ удалён', 'success');
+            loadMyKeys();
+        } else {
+            showToast(data.error || 'Ошибка удаления', 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка соединения', 'error');
+    }
+}
+
+async function createKey() {
+    const rawName = document.getElementById('username').value.trim();
+    const username = rawName || suggestedUsername || (userEmail || pendingEmail).split('@')[0].replace(/[^a-zA-Z0-9_\-]/g, '');
+    const errorEl = document.getElementById('create-error');
+    const isReplace = !!replaceOldUuid;
+
+    // selectedServer не обязателен — backend сам выберет recommended-сервер
+    // если фронт не передаст его (auto-выбор по нагрузке).
+
+    if (!sessionToken) {
+        errorEl.textContent = 'Сессия не найдена, войдите заново';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    errorEl.classList.add('hidden');
+    const btn = document.getElementById('create-key-btn');
+    btn.disabled = true;
+    btn.textContent = isReplace ? 'Замена...' : 'Генерация...';
+
+    const endpoint = isReplace ? '/api/my-keys/replace' : '/api/create';
+    const body = { server: selectedServer, username, token: sessionToken };
+    if (isReplace) body.old_uuid = replaceOldUuid;
+
+    try {
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (res.status === 401) {
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user_email');
+            errorEl.textContent = 'Сессия истекла, войдите заново';
+            errorEl.classList.remove('hidden');
+            setTimeout(() => location.reload(), 1500);
+            return;
+        }
+
+        if (data.code === 'key_limit_reached') {
+            errorEl.classList.add('hidden');
+            loadMyKeys();
+            showToast(data.error || 'Достигнут лимит ключей', 'error');
+            return;
+        }
+
+        if (res.status === 402 || data.code === 'subscription_required') {
+            errorEl.classList.add('hidden');
+            loadMyKeys();
+            openPaymentModal();
+            showToast('Нужна активная подписка', 'error');
+            return;
+        }
+
+        if (data.code === 'server_full') {
+            errorEl.textContent = data.error || 'Этот сервер заполнен. Выберите другой.';
+            errorEl.classList.remove('hidden');
+            await refreshServersList();
+            renderServerButtons(myKeys.map(k => k.server), replaceOldServer);
+            return;
+        }
+
+        if (res.status === 409 || data.code === 'key_exists_on_server' || data.code === 'key_exists') {
+            errorEl.textContent = 'У вас уже есть ключ на этом сервере. Замените его через карточку ключа.';
+            errorEl.classList.remove('hidden');
+            loadMyKeys();
+            return;
+        }
+
+        if (!res.ok) {
+            errorEl.textContent = data.error;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('username').value = '';
+        replaceOldUuid = null;
+        replaceOldServer = null;
+        showResult(data, isReplace ? 'Ключ заменён' : 'Ключ успешно создан!');
+    } catch (e) {
+        errorEl.textContent = 'Ошибка соединения с сервером';
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = isReplace ? 'Заменить ключ' : 'Сгенерировать ключ';
+    }
+}
+
+function resetForm() {
+    loadMyKeys();
+}
+
+function copyText(elementId, btn) {
+    const text = document.getElementById(elementId).textContent;
+    const done = () => {
+        btn.classList.add('copied');
+        btn.textContent = 'Скопировано!';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.textContent = 'Скопировать';
+        }, 2000);
+        showToast('Скопировано в буфер!', 'success');
+    };
+    const fail = () => showToast('Не удалось скопировать', 'error');
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(fail);
+        return;
+    }
+
+    // Фолбэк для HTTP / старых браузеров
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    try {
+        if (document.execCommand('copy')) done();
+        else fail();
+    } catch (e) {
+        fail();
+    } finally {
+        document.body.removeChild(ta);
+    }
+}
+
+// Проверка сессии на бэке при загрузке
+async function checkSession() {
+    if (!sessionToken) return;
+
+    // сразу прячем email-форму — не моргаем при наличии активной сессии
+    document.getElementById('email-section').classList.add('hidden');
+    document.getElementById('user-email-display').textContent = 'Проверка...';
+    document.getElementById('user-email-display').classList.remove('hidden');
+
+    try {
+        const res = await fetch(`${API_URL}/api/verify-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+            userEmail = data.email;
+            localStorage.setItem('user_email', data.email);
+            document.getElementById('user-email-display').textContent = data.email;
+            document.getElementById('logout-btn').classList.remove('hidden');
+            loadMyKeys();
+            // Если юзер вернулся с lava после оплаты — поллим статус.
+            checkPendingLavaPayment();
+        } else {
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user_email');
+            sessionToken = null;
+            document.getElementById('user-email-display').classList.add('hidden');
+            showEmailSection();
+        }
+    } catch (e) {
+        document.getElementById('user-email-display').textContent = userEmail || '';
+        showEmailSection();
+    }
+}
+checkSession();
+
+document.getElementById('create-key-btn')?.addEventListener('click', createKey);
+document.getElementById('reset-btn')?.addEventListener('click', resetForm);
+document.getElementById('new-key-btn')?.addEventListener('click', showServerSection);
+document.getElementById('create-first-btn')?.addEventListener('click', showServerSection);
+document.getElementById('server-back-btn')?.addEventListener('click', loadMyKeys);
+document.getElementById('payment-close-btn')?.addEventListener('click', closePaymentModal);
+document.getElementById('lava-pay-btn')?.addEventListener('click', payViaLava);
+document.getElementById('promo-btn')?.addEventListener('click', redeemPromo);
+document.getElementById('promo-input')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') redeemPromo();
+});
+document.getElementById('payment-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'payment-modal') closePaymentModal();
+});
+// Platform tabs в инструкции
+function initPlatformTabs() {
+    const tabs = document.querySelectorAll('.platform-tab');
+    if (!tabs.length) return;
+
+    // Автоопределение платформы по UA
+    const ua = navigator.userAgent.toLowerCase();
+    let def = 'windows';
+    if (/iphone|ipad|ipod/.test(ua)) def = 'ios';
+    else if (/android/.test(ua)) def = 'android';
+    else if (/mac/.test(ua)) def = 'macos';
+
+    function select(platform) {
+        tabs.forEach(t => {
+            const active = t.dataset.platform === platform;
+            t.classList.toggle('primary-gradient', active);
+            t.classList.toggle('text-on-primary', active);
+            t.classList.toggle('bg-surface-container', !active);
+            t.classList.toggle('text-on-surface-variant', !active);
+        });
+        document.querySelectorAll('.platform-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById('platform-' + platform)?.classList.remove('hidden');
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => select(t.dataset.platform)));
+    select(def);
+}
+initPlatformTabs();
+
+document.getElementById('change-email-btn')?.addEventListener('click', () => {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    const btn = document.getElementById('send-code-btn');
+    btn.textContent = 'Отправить код';
+    updateSendBtnState();
+    digits.forEach(d => d.value = '');
+    document.getElementById('otp-error')?.classList.add('hidden');
+    showEmailSection();
+    document.getElementById('login-email').focus();
+});
+
+// Enter key handlers
+document.getElementById('login-email')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('send-code-btn').click();
+});
+document.getElementById('username')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('create-key-btn').click();
+});
+</script>
+
 </body>
 </html>

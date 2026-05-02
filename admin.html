@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>WIREX — Admin</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=4">
+<link rel="stylesheet" href="/static/tw.css?v=1">
+<link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|inter:400,500,600,700|jetbrains-mono:400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.bunny.net/css?family=material-symbols-outlined&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wx-bg: #000000;
+    --wx-surface: #0A0A0A;
+    --wx-surface-2: #111111;
+    --wx-border: #2A2A2A;
+    --wx-border-soft: #1A1A1A;
+    --wx-text: #F0F0F0;
+    --wx-text-2: #8A8A8A;
+    --wx-text-3: #4A4A4A;
+    --wx-accent: #F5F5F5;
+    --wx-accent-dim: #CCCCCC;
+    --wx-accent-glow: rgba(245,245,245,.20);
+    --wx-accent-wash: rgba(245,245,245,.06);
+    --wx-success: #00E78B;
+    --wx-warning: #FFB020;
+    --wx-error: #FF4757;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wx-bg);
+    color: var(--wx-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image:
+      linear-gradient(rgba(245,245,245,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,245,245,.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-attachment: fixed;
+  }
+  .font-headline { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+  .font-mono     { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .hidden { display: none !important; }
+
+  .wx-card {
+    background: var(--wx-surface);
+    border: 1px solid var(--wx-border-soft);
+    border-radius: 12px;
+  }
+  .wx-card-deep {
+    background: var(--wx-surface-2);
+    border: 1px solid var(--wx-border);
+    border-radius: 12px;
+  }
+
+  .wx-input,
+  input.wx-input,
+  textarea.wx-input,
+  select.wx-input {
+    background: var(--wx-surface) !important;
+    border: 1px solid var(--wx-border);
+    color: var(--wx-text) !important;
+    -webkit-text-fill-color: var(--wx-text) !important;
+    caret-color: var(--wx-accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .wx-input:focus {
+    outline: none;
+    border-color: var(--wx-accent);
+    box-shadow: 0 0 0 3px rgba(245,245,245,.10);
+  }
+  .wx-input::placeholder { color: var(--wx-text-3) !important; opacity: 1; }
+
+  /* Перебиваем дефолтный серый Tailwind forms plugin'а на всех нативных полях */
+  input, textarea, select {
+    color: var(--wx-text) !important;
+    -webkit-text-fill-color: var(--wx-text) !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--wx-text-3) !important;
+    opacity: 1;
+  }
+
+  .primary-gradient {
+    background: var(--wx-accent);
+    color: #000;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    transition: background .15s, box-shadow .15s, transform .1s;
+  }
+  .primary-gradient:hover { background: var(--wx-accent-dim); box-shadow: 0 0 24px var(--wx-accent-glow); }
+  .primary-gradient:active { transform: scale(.98); }
+  .primary-gradient:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+  /* Кнопки в строках таблиц / inline action chips */
+  .btn-primary,
+  .btn-danger,
+  .btn-warn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border: 1px solid;
+    background: transparent;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    white-space: nowrap;
+  }
+  .btn-primary { color: var(--wx-text); border-color: var(--wx-border); }
+  .btn-primary:hover  { color: #000; background: var(--wx-accent); border-color: var(--wx-accent); }
+  .btn-danger  { color: var(--wx-error); border-color: rgba(255,71,87,.4); }
+  .btn-danger:hover   { background: rgba(255,71,87,.10); border-color: var(--wx-error); }
+  .btn-warn    { color: var(--wx-warning); border-color: rgba(255,176,32,.4); }
+  .btn-warn:hover     { background: rgba(255,176,32,.10); border-color: var(--wx-warning); }
+  .btn-primary:disabled, .btn-danger:disabled, .btn-warn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* Tab nav — никаких пилюль */
+  .tab-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--wx-text-2);
+    background: transparent;
+    border: 1px solid var(--wx-border-soft);
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .tab-btn:hover { color: var(--wx-text); border-color: var(--wx-border); }
+  .tab-btn.active {
+    color: #000;
+    background: var(--wx-accent);
+    border-color: var(--wx-accent);
+    box-shadow: 0 0 16px var(--wx-accent-glow);
+  }
+
+  /* Status badge — микро-чип, оставляем pill-форму только для них */
+  .badge {
+    display: inline-flex; align-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+  .badge-success { color: var(--wx-success); background: rgba(0,231,139,.08);  border-color: rgba(0,231,139,.3); }
+  .badge-warn    { color: var(--wx-warning); background: rgba(255,176,32,.08); border-color: rgba(255,176,32,.3); }
+  .badge-error   { color: var(--wx-error);   background: rgba(255,71,87,.08);  border-color: rgba(255,71,87,.3); }
+  .badge-muted   { color: var(--wx-text-2);  background: transparent;          border-color: var(--wx-border); }
+
+  /* Таблицы */
+  table { border-collapse: collapse; width: 100%; }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--wx-border-soft);
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  th {
+    background: transparent;
+    color: var(--wx-text-2);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    border-bottom-color: var(--wx-border);
+  }
+  tbody tr { transition: background .1s; }
+  tbody tr:hover td { background: rgba(245,245,245,.02); }
+
+  /* Pulsing dot для online-статуса */
+  .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  /* Custom checkbox */
+  .wx-check {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--wx-border);
+    border-radius: 4px;
+    background: var(--wx-surface);
+    cursor: pointer;
+    position: relative;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+    flex-shrink: 0;
+  }
+  .wx-check:hover { border-color: #4A4A4A; }
+  .wx-check:checked { background: var(--wx-accent); border-color: var(--wx-accent); }
+  .wx-check:checked::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'><path d='M3.5 8.5l3 3 6-6.5' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+  }
+
+  ::selection { background: var(--wx-accent); color: #000; }
+
+  /* Toast */
+  .wx-toast {
+    background: var(--wx-surface-2);
+    color: var(--wx-text);
+    border: 1px solid var(--wx-border);
+    border-left: 3px solid var(--wx-success);
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    font-size: 13px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login-section" class="min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-md">
+    <div class="flex flex-col items-center mb-8">
+      <img src="/static/logo.svg" alt="WIREX" class="h-16 w-16 rounded-xl mb-4">
+      <div class="text-[10px] text-on-surface-variant uppercase tracking-[0.2em] mb-2">Control center</div>
+      <h1 class="font-headline text-3xl font-bold tracking-tight">WIR<span class="text-primary">Σ</span>X · Admin</h1>
+    </div>
+    <div class="wx-card p-7">
+      <label class="block text-[10px] text-on-surface-variant font-semibold uppercase tracking-[0.12em] mb-2">Пароль администратора</label>
+      <input id="admin-password" type="password" autofocus class="wx-input w-full font-mono">
+      <div id="login-error" class="text-error text-xs mt-3 hidden"></div>
+      <button id="login-btn" class="primary-gradient w-full mt-5 py-3.5 text-sm">Войти</button>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dashboard" class="hidden">
+  <nav class="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-outline-variant">
+    <div class="flex items-center justify-between gap-3 px-5 py-3 max-w-7xl mx-auto">
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <img src="/static/logo.svg" alt="WIREX" class="h-7 w-7 rounded">
+        <span class="font-headline text-[18px] leading-none font-bold tracking-wide">WIR<span class="text-primary">Σ</span>X</span>
+        <span class="badge badge-muted ml-1">Admin</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span id="last-refresh" class="text-on-surface-variant hidden md:inline"></span>
+        <button id="refresh-btn" class="btn-primary">
+          <span class="material-symbols-outlined" style="font-size:14px">refresh</span> Обновить
+        </button>
+        <button id="logout-btn" class="btn-primary">Выйти</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-5 py-8">
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-7">
+      <div class="wx-card p-5">
+        <div class="text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-2">Всего пользователей</div>
+        <div id="kpi-total" class="text-3xl font-headline font-bold">—</div>
+      </div>
+      <div class="wx-card p-5">
+        <div class="text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-2">Online сейчас</div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-success pulse-dot"></span>
+          <div id="kpi-online" class="text-3xl font-headline font-bold">—</div>
+        </div>
+      </div>
+      <div class="wx-card p-5">
+        <div class="text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-2">Общий трафик</div>
+        <div id="kpi-traffic" class="text-3xl font-headline font-bold">—</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex flex-wrap gap-2 mb-5">
+      <button class="tab-btn active" data-tab="users">Пользователи</button>
+      <button class="tab-btn" data-tab="payments">Платежи <span id="payments-badge" class="ml-1 text-[9px] opacity-80"></span></button>
+      <button class="tab-btn" data-tab="subs">Подписки</button>
+      <button class="tab-btn" data-tab="promos">Промокоды</button>
+      <button class="tab-btn" data-tab="servers">Серверы</button>
+      <button class="tab-btn" data-tab="alerts">Алерты</button>
+      <button class="tab-btn" data-tab="backups">Бэкапы</button>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div id="tab-users" class="tab-panel wx-card overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant gap-3 flex-wrap">
+        <h2 class="font-headline text-lg font-bold">Пользователи</h2>
+        <input id="search" placeholder="Поиск по имени/email…" class="wx-input w-64 max-w-full text-xs">
+      </div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Статус</th>
+              <th>Имя</th>
+              <th>Email</th>
+              <th>Сервер</th>
+              <th>Создан</th>
+              <th>↑ Upload</th>
+              <th>↓ Download</th>
+              <th>Всего</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="users-body">
+            <tr><td colspan="9" class="text-center text-on-surface-variant py-10">Загрузка…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="tab-payments" class="tab-panel hidden wx-card overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant gap-3 flex-wrap">
+        <h2 class="font-headline text-lg font-bold">Заявки на оплату</h2>
+        <select id="payments-filter" class="wx-input text-xs w-56">
+          <option value="pending">В ожидании</option>
+          <option value="approved">Подтверждённые</option>
+          <option value="rejected">Отклонённые</option>
+          <option value="">Все</option>
+        </select>
+      </div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Тариф</th>
+              <th>Сумма</th>
+              <th>Создана</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="payments-body">
+            <tr><td colspan="6" class="text-center text-on-surface-variant py-10">Загрузка…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div id="tab-subs" class="tab-panel hidden">
+      <div class="wx-card p-5 mb-5">
+        <h3 class="font-headline text-base font-bold mb-4">Быстрые действия</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-[10px] text-on-surface-variant font-semibold uppercase tracking-[0.12em] mb-2">Продлить на N дней</label>
+            <div class="flex gap-2">
+              <input id="quick-ext-email" placeholder="email" class="wx-input flex-1 text-xs">
+              <input id="quick-ext-days" type="number" placeholder="30" class="wx-input w-20 text-xs">
+              <button id="quick-ext-btn" class="btn-primary">OK</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] text-on-surface-variant font-semibold uppercase tracking-[0.12em] mb-2">Выдать безлимит</label>
+            <div class="flex gap-2">
+              <input id="quick-unl-email" placeholder="email" class="wx-input flex-1 text-xs">
+              <button id="quick-unl-btn" class="btn-primary">Вкл</button>
+              <button id="quick-unl-off-btn" class="btn-warn">Выкл</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] text-on-surface-variant font-semibold uppercase tracking-[0.12em] mb-2">Удалить подписку</label>
+            <div class="flex gap-2">
+              <input id="quick-rev-email" placeholder="email" class="wx-input flex-1 text-xs">
+              <button id="quick-rev-btn" class="btn-danger">Удалить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wx-card overflow-hidden">
+        <div class="px-5 py-4 border-b border-outline-variant">
+          <h2 class="font-headline text-lg font-bold">Активные подписки</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Тип</th>
+                <th>Истекает</th>
+                <th>Обновлена</th>
+                <th>Статус</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="subs-body">
+              <tr><td colspan="6" class="text-center text-on-surface-variant py-10">Загрузка…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMO CODES -->
+    <div id="tab-promos" class="tab-panel hidden">
+      <div class="wx-card p-5 mb-5">
+        <h3 class="font-headline text-base font-bold mb-4">Создать промокод</h3>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input id="promo-code" placeholder="WIREX99" class="wx-input uppercase text-xs font-mono">
+          <input id="promo-days" type="number" placeholder="Дней (30)" class="wx-input text-xs">
+          <input id="promo-max" type="number" placeholder="Лимит (0=∞)" class="wx-input text-xs">
+          <input id="promo-expires" type="number" placeholder="Истекает через дн." class="wx-input text-xs">
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" id="promo-unlimited" class="wx-check"> Безлимит
+            </label>
+            <button id="promo-create-btn" class="btn-primary ml-auto">Создать</button>
+          </div>
+        </div>
+        <div id="promo-error" class="text-error text-xs mt-3 hidden"></div>
+      </div>
+
+      <div class="wx-card overflow-hidden">
+        <div class="px-5 py-4 border-b border-outline-variant">
+          <h2 class="font-headline text-lg font-bold">Промокоды</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Код</th>
+                <th>Бонус</th>
+                <th>Использований</th>
+                <th>Истекает</th>
+                <th>Создан</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="promos-body">
+              <tr><td colspan="6" class="text-center text-on-surface-variant py-10">Загрузка…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVERS -->
+    <div id="tab-servers" class="tab-panel hidden">
+      <div class="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <div>
+          <h2 class="font-headline text-lg font-bold">Серверы</h2>
+          <div id="servers-meta" class="text-[11px] text-on-surface-variant mt-1">—</div>
+        </div>
+        <div class="flex gap-2">
+          <button id="servers-refresh-btn" class="btn-primary">Обновить метрики</button>
+          <button id="servers-add-btn" class="btn-primary">+ Добавить сервер</button>
+        </div>
+      </div>
+
+      <!-- Форма добавления сервера -->
+      <div id="server-add-form" class="hidden wx-card-deep p-5 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-headline font-semibold text-base">Добавить сервер</h3>
+          <button id="server-add-close" class="text-on-surface-variant hover:text-on-surface text-sm">✕</button>
+        </div>
+        <div class="text-xs text-on-surface-variant mb-4 leading-relaxed">
+          SSH-ключ Амстердама должен быть уже прописан в <code class="font-mono text-primary">~/.ssh/authorized_keys</code> на новом сервере.
+          Flask подключится, поставит xray + hysteria и добавит сервер в пул.
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label class="block">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">IP</span>
+            <input id="srv-ip" type="text" placeholder="1.2.3.4" class="wx-input w-full font-mono text-xs">
+          </label>
+          <label class="block">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">SSH user</span>
+            <input id="srv-user" type="text" value="root" class="wx-input w-full font-mono text-xs">
+          </label>
+          <label class="block md:col-span-2">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">Страна <span id="srv-flag-preview" class="ml-1 text-base"></span></span>
+            <input id="srv-country-search" list="srv-country-list" type="text" placeholder="Начните вводить: Германия / DE / Germany" autocomplete="off" class="wx-input w-full text-xs">
+            <datalist id="srv-country-list"></datalist>
+            <input id="srv-country" type="hidden">
+            <input id="srv-flag" type="hidden">
+          </label>
+          <label class="block md:col-span-2">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">Название для UI <span class="normal-case tracking-normal text-on-surface-variant/70">(по умолчанию из страны)</span></span>
+            <input id="srv-name" type="text" placeholder="Германия" class="wx-input w-full text-xs">
+          </label>
+          <label class="block">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">Bandwidth Мбит/с</span>
+            <input id="srv-bw" type="number" value="50" min="10" class="wx-input w-full font-mono text-xs">
+          </label>
+          <label class="block md:col-span-2">
+            <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1.5">Резервный для (опц.)</span>
+            <select id="srv-backup-for" class="wx-input w-full text-xs">
+              <option value="">— не резерв —</option>
+            </select>
+            <span class="block text-[10px] text-on-surface-variant mt-1.5">Если этот сервер упадёт — юзеров перебросят на выбранный.</span>
+          </label>
+        </div>
+        <div class="mt-4 flex items-center gap-3 flex-wrap">
+          <button id="server-add-submit" class="btn-primary">Установить и добавить</button>
+          <div id="server-add-status" class="text-xs text-on-surface-variant"></div>
+        </div>
+      </div>
+
+      <!-- Failover статус -->
+      <h3 class="font-headline font-semibold text-sm uppercase tracking-[0.12em] text-on-surface-variant mb-3">Failover &amp; health-check</h3>
+      <div id="failover-status" class="wx-card-deep p-4 mb-7 text-sm">
+        <div class="text-on-surface-variant">Загружаю…</div>
+      </div>
+
+      <!-- Список всех серверов -->
+      <h3 class="font-headline font-semibold text-sm uppercase tracking-[0.12em] text-on-surface-variant mb-3">Пул серверов</h3>
+      <div id="servers-manage" class="grid grid-cols-1 gap-2 mb-7">
+        <div class="text-on-surface-variant text-sm">Загружаю…</div>
+      </div>
+
+      <!-- Живые метрики -->
+      <h3 class="font-headline font-semibold text-sm uppercase tracking-[0.12em] text-on-surface-variant mb-3">Метрики по SSH</h3>
+      <div id="servers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="text-on-surface-variant text-sm">Нажмите «Обновить метрики».</div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="tab-alerts" class="tab-panel hidden">
+      <div class="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <div>
+          <h2 class="font-headline text-lg font-bold">Алерты</h2>
+          <div id="alerts-meta" class="text-[11px] text-on-surface-variant mt-1">—</div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="alerts-refresh-btn" class="btn-primary">Обновить</button>
+          <button id="alerts-run-btn" class="btn-primary">Проверить сейчас</button>
+          <button id="alerts-test-btn" class="btn-primary">Тестовое письмо</button>
+        </div>
+      </div>
+      <div id="alerts-email-warn" class="hidden wx-card-deep border-l-2 border-error p-3 text-sm text-error mb-5"></div>
+      <h3 class="font-headline font-semibold text-sm uppercase tracking-[0.12em] text-on-surface-variant mb-3">Текущее состояние</h3>
+      <div id="alerts-current" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-7">
+        <div class="text-on-surface-variant text-sm">Нажмите «Обновить».</div>
+      </div>
+      <h3 class="font-headline font-semibold text-sm uppercase tracking-[0.12em] text-on-surface-variant mb-3">Последние события</h3>
+      <div id="alerts-log" class="wx-card divide-y divide-outline-variant">
+        <div class="p-4 text-on-surface-variant text-sm">—</div>
+      </div>
+    </div>
+
+    <!-- BACKUPS -->
+    <div id="tab-backups" class="tab-panel hidden">
+      <div class="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <div>
+          <h2 class="font-headline text-lg font-bold">Бэкапы</h2>
+          <div id="backups-meta" class="text-[11px] text-on-surface-variant mt-1">JSON + Xray-конфиги со всех серверов. Cron: каждый день 04:00 UTC. Хранение 30 дней.</div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="backups-refresh-btn" class="btn-primary">Обновить</button>
+          <button id="backup-now-btn" class="btn-primary">Сделать бэкап сейчас</button>
+        </div>
+      </div>
+      <div id="backup-log" class="hidden wx-card-deep p-3 text-xs font-mono text-on-surface-variant mb-4 whitespace-pre-wrap max-h-48 overflow-auto"></div>
+      <div id="backups-list" class="wx-card divide-y divide-outline-variant">
+        <div class="p-4 text-on-surface-variant text-sm">Нажмите «Обновить», чтобы увидеть список.</div>
+      </div>
+    </div>
+
+  </main>
+</section>
+
+<script>
+const API_URL = 'https://api.wirex.online:8443';
+let adminPass = sessionStorage.getItem('admin_pass') || '';
+let refreshTimer = null;
+let allUsers = [];
+
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0, v = n;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return v.toFixed(v < 10 && i > 0 ? 2 : 1) + ' ' + units[i];
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  } catch (e) { return iso; }
+}
+
+async function api(path, body = {}) {
+  const res = await fetch(API_URL + path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({password: adminPass, ...body})
+  });
+  if (res.status === 403) {
+    adminPass = '';
+    sessionStorage.removeItem('admin_pass');
+    showLogin();
+    throw new Error('unauthorized');
+  }
+  return res.json();
+}
+
+function showLogin() {
+  document.getElementById('login-section').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+function showDashboard() {
+  document.getElementById('login-section').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  loadAll();
+  refreshTimer = setInterval(loadAll, 15000);
+}
+
+async function loadAll() {
+  try {
+    const [stats, payments, subs, promos] = await Promise.all([
+      api('/api/admin/stats'),
+      api('/api/admin/payments/list', { status: document.getElementById('payments-filter').value }),
+      api('/api/admin/subscription/list'),
+      api('/api/admin/promo/list'),
+    ]);
+    renderStats(stats);
+    renderPayments(payments);
+    renderSubs(subs);
+    renderPromos(promos);
+    document.getElementById('last-refresh').textContent = 'обновлено ' + new Date().toLocaleTimeString('ru-RU');
+  } catch (e) { /* уже обработано в api() */ }
+}
+
+function renderPayments(data) {
+  const items = data.requests || [];
+  const tariffs = data.tariffs || {};
+  const pending = items.filter(r => r.status === 'pending').length;
+  const badge = document.getElementById('payments-badge');
+  badge.textContent = pending ? `(${pending})` : '';
+  const body = document.getElementById('payments-body');
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="6" class="text-center text-on-surface-variant py-10">Нет заявок</td></tr>';
+    return;
+  }
+  body.innerHTML = items.map(r => {
+    const tariffLabel = tariffs[r.tariff]?.label || r.tariff;
+    const statusBadge = r.status === 'pending'
+      ? '<span class="badge badge-warn">ожидает</span>'
+      : r.status === 'approved'
+        ? '<span class="badge badge-success">оплачено</span>'
+        : '<span class="badge badge-error">отклонено</span>';
+    const actions = r.status === 'pending'
+      ? `<button class="btn-primary" data-approve="${r.id}">✓ Подтвердить</button>
+         <button class="btn-danger ml-2" data-reject="${r.id}">Отклонить</button>`
+      : `<span class="text-on-surface-variant text-xs">${fmtDate(r.resolved_at)}</span>`;
+    return `
+      <tr>
+        <td class="font-semibold">${escapeHtml(r.email)}</td>
+        <td>${escapeHtml(tariffLabel)} (${r.days}д)</td>
+        <td class="font-mono">${r.price}₽</td>
+        <td class="text-on-surface-variant text-xs">${fmtDate(r.created)}</td>
+        <td>${statusBadge}</td>
+        <td>${actions}</td>
+      </tr>`;
+  }).join('');
+  body.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.onclick = () => approvePayment(btn.dataset.approve);
+  });
+  body.querySelectorAll('[data-reject]').forEach(btn => {
+    btn.onclick = () => rejectPayment(btn.dataset.reject);
+  });
+}
+
+async function approvePayment(id) {
+  if (!confirm('Подтвердить оплату? Подписка будет активирована.')) return;
+  const r = await api('/api/admin/payments/approve', { id });
+  if (r.ok) { showToast('Подписка активирована'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+async function rejectPayment(id) {
+  const reason = prompt('Причина отклонения (необязательно):') ?? '';
+  const r = await api('/api/admin/payments/reject', { id, reason });
+  if (r.ok) { showToast('Отклонено'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+function renderSubs(items) {
+  const body = document.getElementById('subs-body');
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="6" class="text-center text-on-surface-variant py-10">Нет подписок</td></tr>';
+    return;
+  }
+  body.innerHTML = items.map(s => {
+    const typeLabel = s.plan === 'unlimited' ? '∞ безлимит' : 'платная';
+    const statusBadge = s.active
+      ? '<span class="badge badge-success">активна</span>'
+      : '<span class="badge badge-muted">истекла</span>';
+    const exp = s.plan === 'unlimited' ? '—' : fmtDate(s.expires_at);
+    return `
+      <tr>
+        <td class="font-semibold">${escapeHtml(s.email)}</td>
+        <td>${typeLabel}</td>
+        <td class="text-on-surface-variant text-xs">${exp}</td>
+        <td class="text-on-surface-variant text-xs">${fmtDate(s.updated)}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <button class="btn-primary" data-ext="${escapeHtml(s.email)}">+30д</button>
+          <button class="btn-danger ml-1" data-rev="${escapeHtml(s.email)}">Удалить</button>
+        </td>
+      </tr>`;
+  }).join('');
+  body.querySelectorAll('[data-ext]').forEach(btn => {
+    btn.onclick = () => quickExtend(btn.dataset.ext, 30);
+  });
+  body.querySelectorAll('[data-rev]').forEach(btn => {
+    btn.onclick = () => quickRevoke(btn.dataset.rev);
+  });
+}
+
+async function quickExtend(email, days) {
+  const r = await api('/api/admin/subscription/extend', { email, days });
+  if (r.ok) { showToast('Подписка продлена'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+async function quickUnlimited(email, enabled) {
+  const r = await api('/api/admin/subscription/unlimited', { email, enabled });
+  if (r.ok) { showToast(enabled ? 'Безлимит включён' : 'Безлимит выключен'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+async function quickRevoke(email) {
+  if (!confirm(`Удалить подписку ${email}? Ключи будут отключены.`)) return;
+  const r = await api('/api/admin/subscription/revoke', { email });
+  if (r.ok) { showToast('Подписка удалена'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+function renderPromos(items) {
+  const body = document.getElementById('promos-body');
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="6" class="text-center text-on-surface-variant py-10">Промокодов нет</td></tr>';
+    return;
+  }
+  body.innerHTML = items.map(p => {
+    const bonus = p.unlimited ? '∞ безлимит' : `+${p.days} дн.`;
+    const usage = p.max_uses ? `${p.uses || 0} / ${p.max_uses}` : `${p.uses || 0} / ∞`;
+    return `
+      <tr>
+        <td class="font-mono font-bold">${escapeHtml(p.code)}</td>
+        <td>${bonus}</td>
+        <td>${usage}</td>
+        <td class="text-on-surface-variant text-xs">${p.expires_at ? fmtDate(p.expires_at) : '—'}</td>
+        <td class="text-on-surface-variant text-xs">${fmtDate(p.created)}</td>
+        <td><button class="btn-danger" data-del="${escapeHtml(p.code)}">Удалить</button></td>
+      </tr>`;
+  }).join('');
+  body.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = () => deletePromo(btn.dataset.del);
+  });
+}
+
+async function createPromo() {
+  const code = document.getElementById('promo-code').value.trim().toUpperCase();
+  const days = parseInt(document.getElementById('promo-days').value || '0', 10);
+  const max_uses = parseInt(document.getElementById('promo-max').value || '0', 10);
+  const expires_in_days = parseInt(document.getElementById('promo-expires').value || '0', 10);
+  const unlimited = document.getElementById('promo-unlimited').checked;
+  const err = document.getElementById('promo-error');
+  err.classList.add('hidden');
+
+  const r = await api('/api/admin/promo/create', { code, days, max_uses, expires_in_days, unlimited });
+  if (r.ok) {
+    showToast('Промокод создан');
+    document.getElementById('promo-code').value = '';
+    document.getElementById('promo-days').value = '';
+    document.getElementById('promo-max').value = '';
+    document.getElementById('promo-expires').value = '';
+    document.getElementById('promo-unlimited').checked = false;
+    loadAll();
+  } else {
+    err.textContent = r.error || 'Ошибка';
+    err.classList.remove('hidden');
+  }
+}
+
+async function deletePromo(code) {
+  if (!confirm(`Удалить промокод ${code}?`)) return;
+  const r = await api('/api/admin/promo/delete', { code });
+  if (r.ok) { showToast('Удалён'); loadAll(); }
+  else alert(r.error || 'Ошибка');
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.className = 'fixed bottom-6 right-6 wx-toast z-50';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+
+function renderStats(data) {
+  allUsers = data.users || [];
+  document.getElementById('kpi-total').textContent = data.total || 0;
+  document.getElementById('kpi-online').textContent = data.online_count || 0;
+  const totalBytes = allUsers.reduce((s, u) => s + u.traffic_up + u.traffic_down, 0);
+  document.getElementById('kpi-traffic').textContent = fmtBytes(totalBytes);
+  renderUsers();
+}
+
+function renderUsers() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const filtered = q
+    ? allUsers.filter(u =>
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q))
+    : allUsers;
+
+  const body = document.getElementById('users-body');
+  if (!filtered.length) {
+    body.innerHTML = '<tr><td colspan="9" class="text-center text-on-surface-variant py-10">Нет пользователей</td></tr>';
+    return;
+  }
+
+  body.innerHTML = filtered.map(u => {
+    // Список серверов: флаги + tooltip с названием. Один UUID может сидеть на N серверах.
+    const servers = Array.isArray(u.servers) ? u.servers : (u.server ? [{key: u.server, name: u.server_name, flag: u.server_flag}] : []);
+    const serversCell = servers.length
+      ? servers.map(s => `<span title="${escapeHtml(s.name || s.key)}" class="inline-block mr-1 text-base" style="line-height:1">${s.flag || ''}</span>`).join('') + ` <span class="text-[10px] text-on-surface-variant">×${servers.length}</span>`
+      : '—';
+    return `
+    <tr>
+      <td>
+        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${u.online ? 'text-success' : 'text-on-surface-variant'}">
+          <span class="w-2 h-2 rounded-full ${u.online ? 'bg-success pulse-dot' : 'bg-outline'}"></span>
+          ${u.online ? 'online' : 'offline'}
+        </span>
+      </td>
+      <td class="font-semibold">${escapeHtml(u.username)}</td>
+      <td class="text-on-surface-variant">${escapeHtml(u.email || '—')}</td>
+      <td>${serversCell}</td>
+      <td class="text-on-surface-variant text-xs">${fmtDate(u.created)}</td>
+      <td class="font-mono">${fmtBytes(u.traffic_up)}</td>
+      <td class="font-mono">${fmtBytes(u.traffic_down)}</td>
+      <td class="font-mono font-semibold">${fmtBytes(u.traffic_up + u.traffic_down)}</td>
+      <td><button class="btn-danger" data-del-uuid="${escapeHtml(u.uuid || '')}" data-del-name="${escapeHtml(u.username)}" data-del-server="${escapeHtml('все серверы')}">Удалить</button></td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('[data-del-uuid]').forEach(btn => {
+    btn.onclick = () => deleteUser(btn.dataset.delUuid, btn.dataset.delName, btn.dataset.delServer);
+  });
+}
+
+async function deleteUser(uuid, username, server) {
+  if (!confirm(`Удалить ключ ${username} на ${server}? Ключ перестанет работать.`)) return;
+  try {
+    const r = await api('/api/delete', { uuid, username });
+    if (r.ok) loadAll();
+    else alert(r.error || 'Ошибка');
+  } catch (e) { /* already handled */ }
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Events
+document.getElementById('login-btn').onclick = async () => {
+  const pwd = document.getElementById('admin-password').value;
+  const err = document.getElementById('login-error');
+  err.classList.add('hidden');
+  try {
+    const res = await fetch(API_URL + '/api/admin/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: pwd})
+    });
+    if (res.ok) {
+      adminPass = pwd;
+      sessionStorage.setItem('admin_pass', pwd);
+      showDashboard();
+    } else {
+      const data = await res.json();
+      err.textContent = data.error || 'Ошибка';
+      err.classList.remove('hidden');
+    }
+  } catch (e) {
+    err.textContent = 'Ошибка соединения';
+    err.classList.remove('hidden');
+  }
+};
+
+document.getElementById('admin-password').addEventListener('keypress', e => {
+  if (e.key === 'Enter') document.getElementById('login-btn').click();
+});
+
+document.getElementById('refresh-btn').onclick = loadAll;
+document.getElementById('logout-btn').onclick = () => {
+  adminPass = '';
+  sessionStorage.removeItem('admin_pass');
+  showLogin();
+};
+document.getElementById('search').addEventListener('input', renderUsers);
+
+// Servers stats
+let serversLoadedOnce = false;
+
+function fmtUptime(sec) {
+  if (!sec) return '—';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}д ${h}ч`;
+  if (h > 0) return `${h}ч ${m}м`;
+  return `${m}м`;
+}
+
+function loadColor(load1m, cpu) {
+  if (!cpu || load1m == null) return 'var(--wx-text-2)';
+  const ratio = load1m / cpu;
+  if (ratio < 0.6) return 'var(--wx-success)';
+  if (ratio < 1.0) return 'var(--wx-warning)';
+  return 'var(--wx-error)';
+}
+
+function renderServers(servers, meta) {
+  const grid = document.getElementById('servers-grid');
+  const metaEl = document.getElementById('servers-meta');
+  if (metaEl) {
+    const when = meta.ts ? new Date(meta.ts * 1000).toLocaleTimeString('ru-RU') : '—';
+    metaEl.textContent = `Обновлено в ${when} · ${meta.cached ? 'из кеша' : 'свежо'} · TTL ${meta.cache_ttl}с`;
+  }
+  if (!servers.length) {
+    grid.innerHTML = '<div class="text-on-surface-variant text-sm">Серверы не настроены.</div>';
+    return;
+  }
+  grid.innerHTML = servers.map(s => {
+    const online = s.online;
+    const statusClass = online ? 'badge badge-success' : 'badge badge-error';
+    const statusText = online ? 'ONLINE' : `OFFLINE${s.online_reason ? ' · ' + escapeHtml(s.online_reason) : ''}`;
+    const memUsedGb = s.mem_used ? (s.mem_used / 1073741824).toFixed(2) : null;
+    const memTotalGb = s.mem_total ? (s.mem_total / 1073741824).toFixed(2) : null;
+    const memPct = (s.mem_total && s.mem_used) ? Math.round((s.mem_used / s.mem_total) * 100) : null;
+    const xrayStatus = s.xray_active ? '<span class="text-success">active</span>' : (s.xray_active === false ? '<span class="text-error">stopped</span>' : '—');
+    const hy2Status = s.hysteria_installed === false
+        ? '<span class="text-on-surface-variant">не установлен</span>'
+        : (s.hysteria_active ? '<span class="text-success">active</span>'
+           : (s.hysteria_active === false ? '<span class="text-error">stopped</span>' : '—'));
+    return `
+      <div class="wx-card p-5">
+        <div class="flex items-start justify-between mb-4 gap-3">
+          <div>
+            <div class="text-xl">${s.flag || ''} <span class="font-headline font-bold text-base align-middle">${escapeHtml(s.name)}</span></div>
+            <div class="text-[11px] text-on-surface-variant font-mono mt-1">${escapeHtml(s.ip)}:${s.port}${s.remote ? ' · SSH' : ' · local'}</div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="${statusClass}">${statusText}</span>
+            <div class="text-[10px] text-on-surface-variant mt-1.5">${s.latency_ms != null ? s.latency_ms + ' мс' : ''}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">Ключи</div>
+            <div class="font-semibold text-base mt-1" style="color:${s.full ? 'var(--wx-error)' : 'inherit'}">${s.users_total}<span class="text-on-surface-variant font-normal"> / ${s.max_users ?? '?'}</span></div>
+            <div class="text-[10px] text-on-surface-variant mt-1">активных ${s.users_active} · ${s.bandwidth_mbps ? s.bandwidth_mbps + ' Мбит/с' : 'bw n/a'}${s.full ? ' · <span style="color:var(--wx-error)">заполнен</span>' : ''}</div>
+          </div>
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">Xray / Hy2</div>
+            <div class="font-semibold text-base mt-1">${escapeHtml(s.xray_version || '—')}</div>
+            <div class="text-[10px]">Xray: ${xrayStatus}</div>
+            <div class="text-[10px]">Hy2: ${hy2Status}</div>
+          </div>
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">Load avg</div>
+            <div class="font-semibold text-base mt-1" style="color:${loadColor(s.load_1m, s.cpu_count)}">${s.load_1m != null ? s.load_1m.toFixed(2) : '—'}</div>
+            <div class="text-[10px] text-on-surface-variant">5м ${s.load_5m != null ? s.load_5m.toFixed(2) : '—'} · 15м ${s.load_15m != null ? s.load_15m.toFixed(2) : '—'} · ${s.cpu_count || '?'} CPU</div>
+          </div>
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">RAM</div>
+            <div class="font-semibold text-base mt-1">${memPct != null ? memPct + '%' : '—'}</div>
+            <div class="text-[10px] text-on-surface-variant">${memUsedGb || '—'} / ${memTotalGb || '—'} ГБ</div>
+          </div>
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">Трафик ↓</div>
+            <div class="font-semibold text-base mt-1">${s.net_rx != null ? fmtBytes(s.net_rx) : '—'}</div>
+            <div class="text-[10px] text-on-surface-variant">с момента запуска</div>
+          </div>
+          <div class="wx-card-deep p-3">
+            <div class="text-[9px] text-on-surface-variant uppercase tracking-[0.12em]">Трафик ↑</div>
+            <div class="font-semibold text-base mt-1">${s.net_tx != null ? fmtBytes(s.net_tx) : '—'}</div>
+            <div class="text-[10px] text-on-surface-variant">uptime ${fmtUptime(s.uptime_sec)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadServers(forceRefresh) {
+  const btn = document.getElementById('servers-refresh-btn');
+  const grid = document.getElementById('servers-grid');
+  if (btn) { btn.disabled = true; btn.textContent = 'Опрашиваю…'; }
+  if (!serversLoadedOnce) grid.innerHTML = '<div class="text-on-surface-variant text-sm">Опрашиваю серверы по SSH…</div>';
+  try {
+    const res = await fetch(`${API_URL}/api/admin/servers-stats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass, refresh: !!forceRefresh })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      grid.innerHTML = `<div class="text-error text-sm">${escapeHtml(data.error || 'Ошибка загрузки')}</div>`;
+      return;
+    }
+    serversLoadedOnce = true;
+    renderServers(data.servers || [], data);
+  } catch (e) {
+    grid.innerHTML = `<div class="text-error text-sm">Ошибка соединения: ${escapeHtml(String(e))}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Обновить метрики'; }
+  }
+}
+
+document.getElementById('servers-refresh-btn')?.addEventListener('click', () => loadServers(true));
+
+// --- Alerts ---
+let alertsLoadedOnce = false;
+
+async function loadAlerts() {
+  const metaEl = document.getElementById('alerts-meta');
+  const warnEl = document.getElementById('alerts-email-warn');
+  const currEl = document.getElementById('alerts-current');
+  const logEl = document.getElementById('alerts-log');
+  const btn = document.getElementById('alerts-refresh-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Загрузка…'; }
+  try {
+    const res = await fetch(`${API_URL}/api/admin/alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      currEl.innerHTML = `<div class="text-error text-sm">${escapeHtml(data.error || 'Ошибка')}</div>`;
+      return;
+    }
+    alertsLoadedOnce = true;
+    if (metaEl) metaEl.textContent = `Интервал ${data.interval_sec}с · cooldown ${Math.round(data.cooldown_sec/60)} мин · получатель: ${data.admin_email || '—'}`;
+    if (warnEl) {
+      if (!data.admin_email) {
+        warnEl.textContent = 'admin_email не задан в /opt/vpn-site/secrets.json — алерты не будут отправляться. Добавьте "admin_email": "you@example.com" и перезапустите vpn-site.';
+        warnEl.classList.remove('hidden');
+      } else {
+        warnEl.classList.add('hidden');
+      }
+    }
+    const labels = data.labels || {};
+    if (!data.current.length) {
+      currEl.innerHTML = `<div class="text-on-surface-variant text-sm col-span-full">Нет данных — watcher ещё не стартовал или admin_email не задан.</div>`;
+    } else {
+      currEl.innerHTML = data.current.map(c => {
+        const ok = !c.issues.length;
+        const stateBadge = ok ? '<span class="badge badge-success">OK</span>' : '<span class="badge badge-error">ALERT</span>';
+        const status = ok ? 'OK' : c.issues.map(i => escapeHtml(labels[i] || i)).join(', ');
+        return `
+          <div class="wx-card p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="font-semibold text-sm">${c.flag || ''} ${escapeHtml(c.name)}</div>
+              ${stateBadge}
+            </div>
+            <div class="text-xs text-on-surface-variant mt-1.5">${status}</div>
+            ${c.last_alert_ts ? `<div class="text-[10px] text-on-surface-variant mt-1">последний алерт: ${new Date(c.last_alert_ts*1000).toLocaleString('ru-RU')}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    if (!data.log.length) {
+      logEl.innerHTML = `<div class="p-4 text-on-surface-variant text-sm">Событий нет.</div>`;
+    } else {
+      logEl.innerHTML = data.log.map(e => {
+        const newStr = (e.new || []).map(i => labels[i] || i).join(', ');
+        const resStr = (e.resolved || []).map(i => labels[i] || i).join(', ');
+        const lines = [];
+        if (newStr) lines.push(`<span class="text-error">▲</span> ${escapeHtml(newStr)}`);
+        if (resStr) lines.push(`<span class="text-success">▼</span> ${escapeHtml(resStr)}`);
+        const email = e.email_sent ? '<span class="text-success">email отправлен</span>' : '<span class="text-error">email не отправлен</span>';
+        return `
+          <div class="p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="font-semibold text-sm">${escapeHtml(e.server_name || e.server)}</div>
+              <div class="text-xs text-on-surface-variant">${new Date(e.ts*1000).toLocaleString('ru-RU')}</div>
+            </div>
+            <div class="text-xs mt-1.5 space-y-1">${lines.map(l => `<div>${l}</div>`).join('')}</div>
+            <div class="text-[10px] mt-1">${email}${e.email_target ? ' → ' + escapeHtml(e.email_target) : ''}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (e) {
+    currEl.innerHTML = `<div class="text-error text-sm">Ошибка: ${escapeHtml(String(e))}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Обновить'; }
+  }
+}
+
+async function runAlertsNow() {
+  const btn = document.getElementById('alerts-run-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Проверяю…'; }
+  try {
+    const res = await fetch(`${API_URL}/api/admin/alerts-run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    alert(`Готово. Событий: ${(data.events || []).length}`);
+    await loadAlerts();
+  } catch (e) {
+    alert('Ошибка: ' + String(e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Проверить сейчас'; }
+  }
+}
+
+async function testAlertEmail() {
+  const btn = document.getElementById('alerts-test-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Отправляю…'; }
+  try {
+    const res = await fetch(`${API_URL}/api/admin/alerts-test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (data.ok) alert('Письмо отправлено на ' + data.admin_email);
+    else alert('Не отправлено: ' + (data.error || 'проверь SMTP-пароль и admin_email'));
+  } catch (e) {
+    alert('Ошибка: ' + String(e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Тестовое письмо'; }
+  }
+}
+
+document.getElementById('alerts-refresh-btn')?.addEventListener('click', loadAlerts);
+document.getElementById('alerts-run-btn')?.addEventListener('click', runAlertsNow);
+document.getElementById('alerts-test-btn')?.addEventListener('click', testAlertEmail);
+
+// --- Backups ---
+let backupsLoadedOnce = false;
+
+function fmtRel(ts) {
+  const diff = Date.now()/1000 - ts;
+  if (diff < 60) return `${Math.round(diff)} сек. назад`;
+  if (diff < 3600) return `${Math.round(diff/60)} мин. назад`;
+  if (diff < 86400) return `${Math.round(diff/3600)} ч. назад`;
+  return `${Math.round(diff/86400)} дн. назад`;
+}
+
+async function loadBackups() {
+  const list = document.getElementById('backups-list');
+  const refreshBtn = document.getElementById('backups-refresh-btn');
+  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = 'Загрузка…'; }
+  try {
+    const res = await fetch(`${API_URL}/api/admin/backups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      list.innerHTML = `<div class="p-4 text-error text-sm">${escapeHtml(data.error || 'Ошибка')}</div>`;
+      return;
+    }
+    backupsLoadedOnce = true;
+    const backups = data.backups || [];
+    if (!backups.length) {
+      list.innerHTML = `<div class="p-4 text-on-surface-variant text-sm">Бэкапов пока нет. Нажмите «Сделать бэкап сейчас» или дождитесь cron.</div>`;
+      return;
+    }
+    list.innerHTML = backups.map(b => `
+      <div class="flex items-center justify-between p-4 gap-3">
+        <div>
+          <div class="font-mono text-sm">${escapeHtml(b.name)}</div>
+          <div class="text-[10px] text-on-surface-variant mt-1">${new Date(b.mtime * 1000).toLocaleString('ru-RU')} · ${fmtRel(b.mtime)}</div>
+        </div>
+        <div class="text-sm text-on-surface-variant font-mono">${fmtBytes(b.size)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = `<div class="p-4 text-error text-sm">Ошибка: ${escapeHtml(String(e))}</div>`;
+  } finally {
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = 'Обновить'; }
+  }
+}
+
+async function runBackupNow() {
+  const btn = document.getElementById('backup-now-btn');
+  const logEl = document.getElementById('backup-log');
+  if (!confirm('Запустить бэкап сейчас? Это не влияет на работу VPN.')) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Выполняю…'; }
+  if (logEl) { logEl.classList.remove('hidden'); logEl.textContent = 'Выполняется…'; }
+  try {
+    const res = await fetch(`${API_URL}/api/admin/backup-now`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (logEl) {
+      const parts = [];
+      if (data.stdout) parts.push(data.stdout);
+      if (data.stderr) parts.push('--- stderr ---\n' + data.stderr);
+      if (data.error) parts.push('ERROR: ' + data.error);
+      logEl.textContent = parts.join('\n') || 'Нет вывода';
+    }
+    await loadBackups();
+  } catch (e) {
+    if (logEl) logEl.textContent = 'Ошибка соединения: ' + String(e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Сделать бэкап сейчас'; }
+  }
+}
+
+document.getElementById('backups-refresh-btn')?.addEventListener('click', loadBackups);
+document.getElementById('backup-now-btn')?.addEventListener('click', runBackupNow);
+
+// --- Server pool management (Phase 3b) ---
+
+async function loadFailoverStatus() {
+  const box = document.getElementById('failover-status');
+  if (!box) return;
+  try {
+    const res = await fetch(`${API_URL}/api/admin/servers/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      box.innerHTML = `<div class="text-error text-sm">${escapeHtml(data.error || 'Ошибка')}</div>`;
+      return;
+    }
+    const status = data.status || {};
+    const keys = Object.keys(status);
+    const meta = `<div class="text-[10px] text-on-surface-variant mb-2 uppercase tracking-[0.12em]">Чек каждые ${data.interval_sec}с · fail≥${data.fail_threshold} → failover · ok≥${data.ok_threshold} → recovery</div>`;
+    if (!keys.length) {
+      box.innerHTML = meta + '<div class="text-on-surface-variant text-sm">Health-check ещё не тикал (подождите пару минут после старта).</div>';
+      return;
+    }
+    const now = data.now;
+    box.innerHTML = meta + '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">' + keys.map(k => {
+      const s = status[k];
+      const ago = s.last_check_ts ? (now - s.last_check_ts) + 's назад' : '—';
+      const state = s.failed_over
+        ? `<span class="badge badge-error">FAILED OVER → ${escapeHtml(s.failover_to || '?')}</span>`
+        : (s.fail_count > 0 ? `<span class="badge badge-warn">fails=${s.fail_count}</span>` : '<span class="badge badge-success">OK</span>');
+      return `
+        <div class="wx-card-deep p-3">
+          <div class="font-semibold text-sm">${escapeHtml(k)}</div>
+          <div class="text-xs mt-1.5">${state}</div>
+          <div class="text-[10px] text-on-surface-variant mt-1">проверка ${ago} · ok=${s.ok_count} fail=${s.fail_count}</div>
+        </div>`;
+    }).join('') + '</div>';
+  } catch (e) {
+    box.innerHTML = `<div class="text-error text-sm">Ошибка: ${escapeHtml(String(e))}</div>`;
+  }
+}
+
+async function loadServerPool() {
+  await loadFailoverStatus();
+  const box = document.getElementById('servers-manage');
+  const backupSelect = document.getElementById('srv-backup-for');
+  try {
+    const res = await fetch(`${API_URL}/api/admin/servers/list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: adminPass })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      box.innerHTML = `<div class="text-error text-sm">${escapeHtml(data.error || 'Ошибка')}</div>`;
+      return;
+    }
+    const rule = data.capacity_rule || {};
+    const items = data.servers || [];
+    document.getElementById('servers-meta').textContent =
+      `Серверов: ${items.length} · формула: bw / ${rule.peak_mbps_per_user} Мбит × ${Math.round((1/(rule.concurrency||0.3))*10)/10} = max_users`;
+
+    if (backupSelect) {
+      backupSelect.innerHTML = '<option value="">— не резерв —</option>' +
+        items.map(s => `<option value="${escapeHtml(s.key)}">${s.flag || ''} ${escapeHtml(s.name)} (${escapeHtml(s.key)})</option>`).join('');
+    }
+
+    if (!items.length) {
+      box.innerHTML = '<div class="text-on-surface-variant text-sm">Нет серверов — добавь первый.</div>';
+      return;
+    }
+    box.innerHTML = items.map(s => {
+      const occ = s.max_users ? Math.round((s.users_count / s.max_users) * 100) : 0;
+      const occColor = occ >= 90 ? 'var(--wx-error)' : occ >= 70 ? 'var(--wx-warning)' : 'var(--wx-success)';
+      const disabled = s.disabled;
+      const disabledTag = disabled ? '<span class="badge badge-warn ml-1">disabled</span>' : '';
+      return `
+        <div class="wx-card-deep p-4" data-key="${escapeHtml(s.key)}">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="text-2xl">${s.flag || '🏳️'}</span>
+            <div class="flex-1 min-w-[200px]">
+              <div class="font-semibold text-sm">${escapeHtml(s.name)} <span class="text-[10px] text-on-surface-variant font-mono ml-1">${escapeHtml(s.key)}${s.from_seed ? ' · seed' : ''}</span>${disabledTag}</div>
+              <div class="text-[10px] text-on-surface-variant font-mono mt-0.5">${escapeHtml(s.ip)}:${s.port}${s.backup_for ? ' · резерв для ' + escapeHtml(s.backup_for) : ''}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold font-mono" style="color:${occColor}">${s.users_count} / ${s.max_users}</div>
+              <div class="text-[10px] text-on-surface-variant">${s.bandwidth_mbps || '?'} Мбит/с · ${occ}%</div>
+            </div>
+          </div>
+          <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <label class="block">
+              <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">Bandwidth</span>
+              <input type="number" data-field="bandwidth_mbps" value="${s.bandwidth_mbps || 50}" class="wx-input w-full font-mono text-xs" style="padding:6px 10px">
+            </label>
+            <label class="block">
+              <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">max_users (0=формула)</span>
+              <input type="number" data-field="max_users" value="" placeholder="${s.max_users}" class="wx-input w-full font-mono text-xs" style="padding:6px 10px">
+            </label>
+            <label class="block">
+              <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">Резерв для</span>
+              <select data-field="backup_for" class="wx-input w-full text-xs" style="padding:6px 10px">
+                <option value="">—</option>
+                ${items.filter(x => x.key !== s.key).map(x =>
+                  `<option value="${escapeHtml(x.key)}"${x.key === s.backup_for ? ' selected' : ''}>${escapeHtml(x.key)}</option>`
+                ).join('')}
+              </select>
+            </label>
+            <label class="block">
+              <span class="block text-[10px] text-on-surface-variant uppercase tracking-[0.12em] mb-1">Отключить</span>
+              <select data-field="disabled" class="wx-input w-full text-xs" style="padding:6px 10px">
+                <option value="false"${!disabled ? ' selected' : ''}>нет</option>
+                <option value="true"${disabled ? ' selected' : ''}>да</option>
+              </select>
+            </label>
+          </div>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button class="btn-primary" data-save>Сохранить</button>
+            ${s.users_count === 0
+              ? `<button class="btn-danger" data-remove>Удалить</button>`
+              : `<button class="btn-danger" data-remove-force>Удалить принудительно (${s.users_count} юзеров)</button>`}
+          </div>
+        </div>`;
+    }).join('');
+
+    box.querySelectorAll('[data-save]').forEach(btn => {
+      btn.onclick = () => saveServerRow(btn.closest('[data-key]'));
+    });
+    box.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.onclick = () => removeServer(btn.closest('[data-key]').dataset.key, false);
+    });
+    box.querySelectorAll('[data-remove-force]').forEach(btn => {
+      btn.onclick = () => removeServer(btn.closest('[data-key]').dataset.key, true);
+    });
+  } catch (e) {
+    box.innerHTML = `<div class="text-error text-sm">Ошибка: ${escapeHtml(String(e))}</div>`;
+  }
+}
+
+async function saveServerRow(row) {
+  if (!row) return;
+  const key = row.dataset.key;
+  const body = { password: adminPass, key };
+  const bw = row.querySelector('[data-field="bandwidth_mbps"]').value;
+  const mu = row.querySelector('[data-field="max_users"]').value;
+  const bf = row.querySelector('[data-field="backup_for"]').value;
+  const dis = row.querySelector('[data-field="disabled"]').value === 'true';
+  if (bw) body.bandwidth_mbps = parseInt(bw, 10);
+  if (mu) body.max_users = parseInt(mu, 10);
+  body.backup_for = bf || '';
+  body.disabled = dis;
+  const res = await fetch(`${API_URL}/api/admin/servers/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || 'Ошибка');
+  await loadServerPool();
+}
+
+async function removeServer(key, force) {
+  const msg = force
+    ? `Удалить сервер ${key} ПРИНУДИТЕЛЬНО? Юзеры на нём останутся висеть без рабочего сервера.`
+    : `Удалить сервер ${key}?`;
+  if (!confirm(msg)) return;
+  const res = await fetch(`${API_URL}/api/admin/servers/remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: adminPass, key, force })
+  });
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || 'Ошибка');
+  await loadServerPool();
+}
+
+// Список стран для пикера. ISO 3166-1 alpha-2 → русское имя.
+const COUNTRY_LIST = [
+  ['NL','Нидерланды','Netherlands'],['DE','Германия','Germany'],['FR','Франция','France'],
+  ['FI','Финляндия','Finland'],['SE','Швеция','Sweden'],['NO','Норвегия','Norway'],
+  ['DK','Дания','Denmark'],['IS','Исландия','Iceland'],['EE','Эстония','Estonia'],
+  ['LV','Латвия','Latvia'],['LT','Литва','Lithuania'],['PL','Польша','Poland'],
+  ['CZ','Чехия','Czechia'],['SK','Словакия','Slovakia'],['AT','Австрия','Austria'],
+  ['CH','Швейцария','Switzerland'],['BE','Бельгия','Belgium'],['LU','Люксембург','Luxembourg'],
+  ['IE','Ирландия','Ireland'],['GB','Великобритания','United Kingdom'],['ES','Испания','Spain'],
+  ['PT','Португалия','Portugal'],['IT','Италия','Italy'],['GR','Греция','Greece'],
+  ['HU','Венгрия','Hungary'],['RO','Румыния','Romania'],['BG','Болгария','Bulgaria'],
+  ['HR','Хорватия','Croatia'],['SI','Словения','Slovenia'],['MD','Молдова','Moldova'],
+  ['UA','Украина','Ukraine'],['RS','Сербия','Serbia'],['MK','Северная Македония','North Macedonia'],
+  ['AL','Албания','Albania'],['CY','Кипр','Cyprus'],['MT','Мальта','Malta'],
+  ['TR','Турция','Türkiye'],['GE','Грузия','Georgia'],['AM','Армения','Armenia'],
+  ['AZ','Азербайджан','Azerbaijan'],['KZ','Казахстан','Kazakhstan'],['UZ','Узбекистан','Uzbekistan'],
+  ['KG','Кыргызстан','Kyrgyzstan'],['TJ','Таджикистан','Tajikistan'],['AE','ОАЭ','UAE'],
+  ['IL','Израиль','Israel'],['IN','Индия','India'],['HK','Гонконг','Hong Kong'],
+  ['SG','Сингапур','Singapore'],['JP','Япония','Japan'],['KR','Южная Корея','South Korea'],
+  ['TW','Тайвань','Taiwan'],['VN','Вьетнам','Vietnam'],['TH','Таиланд','Thailand'],
+  ['ID','Индонезия','Indonesia'],['MY','Малайзия','Malaysia'],['AU','Австралия','Australia'],
+  ['NZ','Новая Зеландия','New Zealand'],['US','США','United States'],['CA','Канада','Canada'],
+  ['MX','Мексика','Mexico'],['BR','Бразилия','Brazil'],['AR','Аргентина','Argentina'],
+  ['CL','Чили','Chile'],['ZA','ЮАР','South Africa'],['EG','Египет','Egypt'],
+];
+
+function isoToFlag(iso) {
+  if (!iso || iso.length !== 2) return '';
+  const cc = iso.toUpperCase();
+  return String.fromCodePoint(0x1F1E6 + cc.charCodeAt(0) - 65, 0x1F1E6 + cc.charCodeAt(1) - 65);
+}
+
+function populateCountryDatalist() {
+  const dl = document.getElementById('srv-country-list');
+  if (!dl || dl.dataset.filled) return;
+  dl.dataset.filled = '1';
+  dl.innerHTML = COUNTRY_LIST.map(([iso, ru, en]) =>
+    `<option value="${isoToFlag(iso)} ${ru} (${iso})" data-iso="${iso}" data-name="${ru}"></option>`
+  ).join('');
+}
+
+function resolveCountrySelection(rawValue) {
+  const v = (rawValue || '').trim();
+  if (!v) return null;
+  const m = v.match(/\(([A-Za-z]{2})\)\s*$/);
+  if (m) {
+    const iso = m[1].toUpperCase();
+    const hit = COUNTRY_LIST.find(([c]) => c === iso);
+    if (hit) return { iso, name: hit[1], flag: isoToFlag(iso) };
+  }
+  if (/^[A-Za-z]{2}$/.test(v)) {
+    const iso = v.toUpperCase();
+    const hit = COUNTRY_LIST.find(([c]) => c === iso);
+    if (hit) return { iso, name: hit[1], flag: isoToFlag(iso) };
+  }
+  const low = v.toLowerCase();
+  const byName = COUNTRY_LIST.find(([, ru, en]) =>
+    ru.toLowerCase() === low || en.toLowerCase() === low
+  ) || COUNTRY_LIST.find(([, ru, en]) =>
+    ru.toLowerCase().startsWith(low) || en.toLowerCase().startsWith(low)
+  );
+  if (byName) {
+    const [iso, ru] = byName;
+    return { iso, name: ru, flag: isoToFlag(iso) };
+  }
+  return null;
+}
+
+function syncCountryPicker() {
+  const search = document.getElementById('srv-country-search');
+  const hidIso = document.getElementById('srv-country');
+  const hidFlag = document.getElementById('srv-flag');
+  const preview = document.getElementById('srv-flag-preview');
+  const nameField = document.getElementById('srv-name');
+  if (!search) return;
+  const sel = resolveCountrySelection(search.value);
+  if (sel) {
+    hidIso.value = sel.iso;
+    hidFlag.value = sel.flag;
+    preview.textContent = sel.flag;
+    if (!nameField.value || nameField.dataset.autofill === '1') {
+      nameField.value = sel.name;
+      nameField.dataset.autofill = '1';
+    }
+  } else {
+    hidIso.value = '';
+    hidFlag.value = '';
+    preview.textContent = '';
+  }
+}
+
+document.getElementById('servers-add-btn')?.addEventListener('click', () => {
+  populateCountryDatalist();
+  document.getElementById('server-add-form').classList.remove('hidden');
+});
+document.getElementById('srv-country-search')?.addEventListener('input', syncCountryPicker);
+document.getElementById('srv-name')?.addEventListener('input', (e) => {
+  if (e.isTrusted) e.target.dataset.autofill = '';
+});
+document.getElementById('server-add-close')?.addEventListener('click', () => {
+  document.getElementById('server-add-form').classList.add('hidden');
+});
+document.getElementById('server-add-submit')?.addEventListener('click', async () => {
+  const statusEl = document.getElementById('server-add-status');
+  const btn = document.getElementById('server-add-submit');
+  syncCountryPicker();
+  const country = document.getElementById('srv-country').value.trim().toUpperCase();
+  const flag = document.getElementById('srv-flag').value.trim();
+  if (!country) {
+    statusEl.innerHTML = '<span class="text-error">Выбери страну из списка (или введи ISO-код)</span>';
+    return;
+  }
+  const body = {
+    password: adminPass,
+    ip: document.getElementById('srv-ip').value.trim(),
+    ssh_user: document.getElementById('srv-user').value.trim() || 'root',
+    country,
+    name: document.getElementById('srv-name').value.trim(),
+    flag,
+    bandwidth_mbps: parseInt(document.getElementById('srv-bw').value || '50', 10),
+    backup_for: document.getElementById('srv-backup-for').value,
+  };
+  btn.disabled = true;
+  statusEl.textContent = 'Пробую SSH, ставлю xray+hysteria (может занять 2-3 мин)…';
+  try {
+    const res = await fetch(`${API_URL}/api/admin/servers/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.innerHTML = `<span class="text-error">${escapeHtml(data.error || 'Ошибка')}</span>${data.ssh_error ? '<br><span class="font-mono text-[10px]">' + escapeHtml(data.ssh_error) + '</span>' : ''}${data.stderr ? '<pre class="text-[10px] mt-2 whitespace-pre-wrap max-h-40 overflow-auto">' + escapeHtml(data.stderr) + '</pre>' : ''}`;
+      return;
+    }
+    statusEl.innerHTML = `<span class="text-success">OK · key=${escapeHtml(data.key)}</span>`;
+    document.getElementById('server-add-form').classList.add('hidden');
+    ['srv-ip','srv-country','srv-name','srv-flag','srv-country-search','srv-backup-for'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('srv-flag-preview').textContent = '';
+    document.getElementById('srv-name').dataset.autofill = '';
+    await loadServerPool();
+  } catch (e) {
+    statusEl.innerHTML = `<span class="text-error">Ошибка сети: ${escapeHtml(String(e))}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Tabs (lazy-load on first click)
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+    if (btn.dataset.tab === 'servers') {
+      loadServerPool();
+      if (!serversLoadedOnce) loadServers(false);
+    }
+    if (btn.dataset.tab === 'alerts' && !alertsLoadedOnce) loadAlerts();
+    if (btn.dataset.tab === 'backups' && !backupsLoadedOnce) loadBackups();
+  };
+});
+
+document.getElementById('payments-filter').onchange = loadAll;
+
+document.getElementById('quick-ext-btn').onclick = () => {
+  const email = document.getElementById('quick-ext-email').value.trim();
+  const days = parseInt(document.getElementById('quick-ext-days').value || '0', 10);
+  if (!email || days <= 0) return alert('Нужен email и дни > 0');
+  quickExtend(email, days);
+  document.getElementById('quick-ext-email').value = '';
+  document.getElementById('quick-ext-days').value = '';
+};
+document.getElementById('quick-unl-btn').onclick = () => {
+  const email = document.getElementById('quick-unl-email').value.trim();
+  if (!email) return alert('Нужен email');
+  quickUnlimited(email, true);
+  document.getElementById('quick-unl-email').value = '';
+};
+document.getElementById('quick-unl-off-btn').onclick = () => {
+  const email = document.getElementById('quick-unl-email').value.trim();
+  if (!email) return alert('Нужен email');
+  quickUnlimited(email, false);
+  document.getElementById('quick-unl-email').value = '';
+};
+document.getElementById('quick-rev-btn').onclick = () => {
+  const email = document.getElementById('quick-rev-email').value.trim();
+  if (!email) return alert('Нужен email');
+  quickRevoke(email);
+  document.getElementById('quick-rev-email').value = '';
+};
+
+document.getElementById('promo-create-btn').onclick = createPromo;
+
+// Auto-login если пароль уже в sessionStorage
+if (adminPass) showDashboard();
+</script>
+</body>
+</html>

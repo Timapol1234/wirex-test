@@ -12,6 +12,7 @@
 <link rel="icon" type="image/svg+xml" sizes="any" href="/static/logo-64.svg?v=5">
 <link rel="apple-touch-icon" sizes="64x64" href="/static/logo-64.svg?v=5">
 <link rel="stylesheet" href="/static/tw.css?v=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|inter:400,500,600,700|jetbrains-mono:400,500,600&amp;display=swap" rel="stylesheet">
 
 <style>
@@ -262,6 +263,7 @@
 <div class="flex items-center gap-2 min-w-0">
 <div id="sub-status-chip" class="hidden wx-chip flex-shrink-0"></div>
 <div id="user-email-display" class="text-on-surface-variant text-xs font-mono hidden md:block truncate max-w-[120px]"></div>
+<button id="tma-unlink-btn" title="Отвязать Telegram от этого аккаунта" class="border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors hidden uppercase tracking-wider flex-shrink-0">Отвязать TG</button>
 <button id="logout-btn" class="border border-outline text-on-surface-variant hover:text-primary hover:border-primary px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors hidden uppercase tracking-wider flex-shrink-0">Выйти</button>
 </div>
 </div>
@@ -739,6 +741,33 @@ const API_URL = '';
 let serversList = {};
 let countdownTimer = null;
 
+// Telegram Mini App context. Заполняется на старте; в обычном вебе available=false.
+const TG = {
+    available: false,
+    initData: '',
+    user: null,
+    pendingLink: false,
+};
+(function initTelegramContext() {
+    const wa = window.Telegram && window.Telegram.WebApp;
+    if (!wa || !wa.initData) return;
+    TG.available = true;
+    TG.initData = wa.initData;
+    TG.user = (wa.initDataUnsafe && wa.initDataUnsafe.user) || null;
+    try { wa.ready(); wa.expand(); } catch (e) {}
+    document.documentElement.classList.add('tma');
+})();
+
+// Открыть внешнюю ссылку: в TMA — через Telegram (внешний браузер), иначе обычный window.open.
+function openExternal(url) {
+    const wa = window.Telegram && window.Telegram.WebApp;
+    if (TG.available && wa && typeof wa.openLink === 'function') {
+        wa.openLink(url, { try_instant_view: false });
+    } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+}
+
 // Функция для показа уведомлений
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -1052,9 +1081,33 @@ document.getElementById('verify-code-btn')?.addEventListener('click', async () =
         document.getElementById('user-email-display').classList.remove('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
 
+        // Если мы внутри TMA и Telegram ещё не привязан — линкуем сразу,
+        // используя свежевыданный session-token. Ошибка тут не должна
+        // ломать вход: пользователь уже вошёл по email, просто без TG-привязки.
+        if (TG.available && TG.pendingLink) {
+            try {
+                const linkRes = await fetch(`${API_URL}/api/telegram/link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData: TG.initData, token: sessionToken }),
+                });
+                const linkData = await linkRes.json().catch(() => ({}));
+                if (linkRes.ok && linkData.ok && linkData.token) {
+                    sessionToken = linkData.token;
+                    localStorage.setItem('session_token', linkData.token);
+                    TG.pendingLink = false;
+                    document.getElementById('tma-link-banner')?.remove();
+                    showToast('Telegram привязан', 'success');
+                } else if (linkData.error) {
+                    showToast(linkData.error, 'error');
+                }
+            } catch (_) { /* линк необязателен для входа */ }
+        }
+
+        updateUnlinkBtnVisibility();
         showToast('Успешная авторизация!', 'success');
         loadMyKeys();
-        
+
     } catch (e) {
         errorEl.textContent = 'Ошибка соединения';
         errorEl.classList.remove('hidden');
@@ -1092,6 +1145,14 @@ document.getElementById('resend-code-btn')?.addEventListener('click', async () =
     }
 });
 
+// Видимость кнопки «Отвязать TG»: только в TMA, при активной сессии и без pendingLink.
+function updateUnlinkBtnVisibility() {
+    const btn = document.getElementById('tma-unlink-btn');
+    if (!btn) return;
+    const show = TG.available && !!sessionToken && !TG.pendingLink;
+    btn.classList.toggle('hidden', !show);
+}
+
 // Logout
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
     try {
@@ -1104,6 +1165,31 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
     localStorage.removeItem('session_token');
     localStorage.removeItem('user_email');
     location.reload();
+});
+
+// Отвязать Telegram (только в TMA): после успеха выходим из сессии,
+// чтобы tmaBootstrap при следующем заходе запросил новую привязку.
+document.getElementById('tma-unlink-btn')?.addEventListener('click', async () => {
+    if (!sessionToken) return;
+    if (!confirm('Отвязать Telegram от аккаунта ' + (userEmail || '') + '?')) return;
+    try {
+        const res = await fetch(`${API_URL}/api/telegram/unlink`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            showToast('Telegram отвязан', 'success');
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('user_email');
+            location.reload();
+        } else {
+            showToast(data.error || 'Не удалось отвязать', 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка соединения', 'error');
+    }
 });
 
 // Load servers (только загружаем; рендер происходит в renderServerButtons при показе секции)
@@ -1615,7 +1701,15 @@ async function payViaLava() {
                     started_at: Date.now()
                 }));
             } catch (_) {}
-            window.location.href = data.payment_url;
+            // В TMA Telegram сам решает, как открыть Lava (обычно во внешнем браузере),
+            // и оставляет Mini App открытым — пользователь вернётся после оплаты.
+            if (TG.available) {
+                openExternal(data.payment_url);
+                label.textContent = oldLabel;
+                btn.disabled = false;
+            } else {
+                window.location.href = data.payment_url;
+            }
         } else {
             err.textContent = data.error || 'Не удалось создать платёж';
             err.classList.remove('hidden');
@@ -1969,7 +2063,54 @@ function copyText(elementId, btn) {
 }
 
 // Проверка сессии на бэке при загрузке
+// Внутри Telegram Mini App: пробуем мгновенный вход по initData.
+// linked=true → ставим session, как после verify-code; need_link → показываем email-форму
+// и помечаем pendingLink, чтобы после verify-code привязать telegram_id.
+async function tmaBootstrap() {
+    if (!TG.available) return false;
+    try {
+        const res = await fetch(`${API_URL}/api/telegram/auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: TG.initData }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok && data.linked && data.token) {
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_email', data.email);
+            sessionToken = data.token;
+            userEmail = data.email;
+            return true;
+        }
+        if (res.ok && data.ok && data.need_link) {
+            TG.pendingLink = true;
+            showTmaLinkBanner();
+        }
+    } catch (e) { /* нет сети — fallback на email-flow */ }
+    return false;
+}
+
+function showTmaLinkBanner() {
+    if (document.getElementById('tma-link-banner')) return;
+    const host = document.getElementById('email-section');
+    if (!host) return;
+    const name = (TG.user && (TG.user.first_name || TG.user.username)) || 'Telegram';
+    const banner = document.createElement('div');
+    banner.id = 'tma-link-banner';
+    banner.className = 'mb-4 p-3 rounded-xl border border-primary/30 bg-primary/5 text-on-surface text-sm';
+    banner.innerHTML = `<div class="flex items-start gap-2"><span class="material-symbols-outlined text-primary text-[18px] mt-0.5">link</span><div><div class="font-medium mb-0.5">Привет, ${name}!</div><div class="text-on-surface-variant">Войдите по email — мы привяжем его к вашему Telegram, и в следующий раз вход будет автоматическим.</div></div></div>`;
+    host.insertBefore(banner, host.firstChild);
+}
+
 async function checkSession() {
+    if (!sessionToken && TG.available) {
+        const ok = await tmaBootstrap();
+        if (!ok) {
+            document.getElementById('user-email-display').classList.add('hidden');
+            showEmailSection();
+            return;
+        }
+    }
     if (!sessionToken) return;
 
     // сразу прячем email-форму — не моргаем при наличии активной сессии
@@ -1990,6 +2131,7 @@ async function checkSession() {
             localStorage.setItem('user_email', data.email);
             document.getElementById('user-email-display').textContent = data.email;
             document.getElementById('logout-btn').classList.remove('hidden');
+            updateUnlinkBtnVisibility();
             loadMyKeys();
             // Если юзер вернулся с lava после оплаты — поллим статус.
             checkPendingLavaPayment();
@@ -1998,6 +2140,12 @@ async function checkSession() {
             localStorage.removeItem('user_email');
             sessionToken = null;
             document.getElementById('user-email-display').classList.add('hidden');
+            // В TMA ещё раз попробуем initData → если linked (а юзер уже был),
+            // получим свежий токен; иначе — стандартная email-форма.
+            if (TG.available) {
+                const retried = await tmaBootstrap();
+                if (retried) return checkSession();
+            }
             showEmailSection();
         }
     } catch (e) {

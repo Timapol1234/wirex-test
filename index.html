@@ -15,6 +15,21 @@
 <link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|inter:400,500,600,700|jetbrains-mono:400,500,600&amp;display=swap" rel="stylesheet">
 
 <style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
         :root {
             --wx-bg: #000000;
             --wx-surface: #0A0A0A;
@@ -1774,12 +1789,16 @@ async function deleteMyKey(key) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: sessionToken, uuid: key.uuid, username: key.username })
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
             showToast('Ключ удалён', 'success');
             loadMyKeys();
+        } else if (res.status === 404) {
+            showToast('Ключ уже удалён', 'success');
+            loadMyKeys();
         } else {
             showToast(data.error || 'Ошибка удаления', 'error');
+            loadMyKeys();
         }
     } catch (e) {
         showToast('Ошибка соединения', 'error');
@@ -1810,10 +1829,19 @@ async function createKey() {
     const body = { server: selectedServer, username, token: sessionToken };
     if (isReplace) body.old_uuid = replaceOldUuid;
 
+    // Idempotency-Key защищает от автоматических ретраев Chrome при
+    // ERR_CONNECTION_CLOSED — браузер пошлёт тот же ключ дважды,
+    // backend дедуплицирует через @idempotent.
+    const idempKey = (crypto.randomUUID && crypto.randomUUID()) ||
+        (Date.now() + '-' + Math.random().toString(36).slice(2));
+
     try {
         const res = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempKey,
+            },
             body: JSON.stringify(body)
         });
 
@@ -1869,8 +1897,30 @@ async function createKey() {
         replaceOldServer = null;
         showResult(data, isReplace ? 'Ключ заменён' : 'Ключ успешно создан!');
     } catch (e) {
-        errorEl.textContent = 'Ошибка соединения с сервером';
+        // Сетевая ошибка (ERR_CONNECTION_CLOSED, timeout) — на сервере запрос мог
+        // успеть отработать. Подождём и проверим список ключей: если ключ есть —
+        // показываем успех; если нет — реальную ошибку соединения.
+        try {
+            await new Promise(r => setTimeout(r, 1500));
+            const checkRes = await fetch(`${API_URL}/api/my-keys`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: sessionToken }),
+            });
+            const checkData = await checkRes.json().catch(() => ({}));
+            const keys = (checkData && checkData.keys) || [];
+            const matched = keys.find(k => k.username === username && k.server === selectedServer);
+            if (matched) {
+                document.getElementById('username').value = '';
+                replaceOldUuid = null;
+                replaceOldServer = null;
+                showResult(matched, isReplace ? 'Ключ заменён' : 'Ключ успешно создан!');
+                return;
+            }
+        } catch (_) {}
+        errorEl.textContent = 'Ошибка соединения с сервером, попробуйте ещё раз';
         errorEl.classList.remove('hidden');
+        loadMyKeys();
     } finally {
         btn.disabled = false;
         btn.textContent = isReplace ? 'Заменить ключ' : 'Сгенерировать ключ';
